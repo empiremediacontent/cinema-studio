@@ -53,6 +53,7 @@ export default function ScriptPanel({
   const [direction, setDirection] = useState(initialDirection || '');
   const [targetDuration, setTargetDuration] = useState('');
   const [customDuration, setCustomDuration] = useState('');
+  const [contextCollapsed, setContextCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -108,160 +109,198 @@ export default function ScriptPanel({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingTop: '24px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexShrink: 0 }}>
-        <h2 style={{
-          fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
-          letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff',
-        }}>
-          Project Context
-        </h2>
+      {/* Header - clickable to toggle collapse */}
+      <button
+        onClick={() => setContextCollapsed(prev => !prev)}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginBottom: contextCollapsed ? '8px' : '16px', flexShrink: 0,
+          width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+          padding: '6px 0',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <svg
+            width="12" height="12" viewBox="0 0 24 24" fill="none"
+            stroke={C.text3} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            style={{
+              transition: 'transform 0.25s ease',
+              transform: contextCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+            }}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+          <h2 style={{
+            fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
+            letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', margin: 0,
+          }}>
+            Project Context
+          </h2>
+          {contextCollapsed && synopsis.trim() && (
+            <span style={{
+              fontSize: '9px', fontFamily: 'Raleway, sans-serif', color: C.text3,
+              maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+              {synopsis.slice(0, 40)}{synopsis.length > 40 ? '...' : ''}
+            </span>
+          )}
+        </div>
         {wordCount > 0 && (
           <span style={{ fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: C.accent }}>
             {wordCount} words in script
           </span>
         )}
-      </div>
+      </button>
 
-      {/* Synopsis context box */}
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-          <label style={{
-            fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
-            letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text2,
-          }}>
-            Synopsis
-          </label>
-          {/* Reset icon */}
-          {synopsis.trim() && (
-            <button
-              onClick={() => setSynopsis('')}
-              title="Clear synopsis"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: '20px', height: '20px',
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: C.text3, transition: 'color 0.2s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#ff264a')}
-              onMouseLeave={e => (e.currentTarget.style.color = C.text3)}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                <path d="M3 3v5h5" />
-              </svg>
-            </button>
-          )}
-        </div>
-        <div style={{ marginBottom: '6px', paddingLeft: '10px', borderLeft: `2px solid rgba(255,45,123,0.2)` }}>
-          <p style={{ fontSize: '10px', fontFamily: 'Raleway, sans-serif', color: 'rgba(255,255,255,0.3)', lineHeight: '1.5', margin: 0 }}>
-            Story overview, character descriptions, setting, mood, tone. Helps the AI understand context without changing your script.
-          </p>
-        </div>
-        <textarea
-          value={synopsis}
-          onChange={(e) => setSynopsis(e.target.value)}
-          placeholder="e.g. A tense thriller set in a neon-lit Tokyo nightclub. Main character Yuki (30s, Japanese woman, sharp features) is a detective undercover as a bartender. The atmosphere is smoky, dangerous, with bass-heavy music..."
-          style={{
-            width: '100%', flex: 1, minHeight: '120px', padding: '14px',
-            background: C.surface, borderWidth: '1px', borderStyle: 'solid', borderColor: C.border,
-            color: '#fff', fontSize: '13px', fontFamily: 'Raleway, sans-serif', lineHeight: '1.7',
-            resize: 'none', outline: 'none', transition: 'border-color 0.3s ease',
-          }}
-          onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,45,123,0.4)')}
-          onBlur={e => (e.currentTarget.style.borderColor = C.border)}
-        />
-      </div>
-
-      {/* Creative Direction */}
-      <div style={{ flexShrink: 0, marginBottom: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-          <label style={{
-            fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
-            letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text2,
-          }}>
-            Creative Direction <span style={{ color: C.text3, fontWeight: 500 }}>(optional)</span>
-          </label>
-          {direction.trim() && (
-            <button
-              onClick={() => setDirection('')}
-              title="Clear direction"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: '20px', height: '20px',
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: C.text3, transition: 'color 0.2s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#ff264a')}
-              onMouseLeave={e => (e.currentTarget.style.color = C.text3)}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                <path d="M3 3v5h5" />
-              </svg>
-            </button>
-          )}
-        </div>
-        <textarea
-          value={direction}
-          onChange={(e) => setDirection(e.target.value)}
-          placeholder="e.g. Blade Runner 2049 look, moody neon lighting, desaturated teal/orange grade, anamorphic lens flares..."
-          rows={2}
-          style={{
-            width: '100%', padding: '14px',
-            background: C.surface, borderWidth: '1px', borderStyle: 'solid', borderColor: C.border,
-            color: '#fff', fontSize: '13px', fontFamily: 'Raleway, sans-serif',
-            resize: 'vertical', outline: 'none', transition: 'border-color 0.3s ease',
-          }}
-          onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,45,123,0.4)')}
-          onBlur={e => (e.currentTarget.style.borderColor = C.border)}
-        />
-      </div>
-
-      {/* Target Duration */}
-      <div style={{ flexShrink: 0, marginBottom: '12px' }}>
-        <label style={{
-          display: 'block', fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
-          letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text2, marginBottom: '6px',
-        }}>
-          Target Duration
-        </label>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <select
-            value={targetDuration}
-            onChange={(e) => setTargetDuration(e.target.value)}
-            style={{
-              flex: 1, padding: '10px 12px', fontSize: '13px', fontFamily: 'Raleway, sans-serif',
-              background: '#1a1a1a', color: '#fff', border: `1px solid ${C.border}`,
-              borderRadius: 0, cursor: 'pointer', outline: 'none',
-            }}
-          >
-            {DURATION_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value} style={{ background: '#1a1a1a', color: '#fff' }}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          {targetDuration === 'custom' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <input
-                type="number"
-                value={customDuration}
-                onChange={(e) => setCustomDuration(e.target.value)}
-                placeholder="120"
-                min="10"
-                max="3600"
+      {/* Collapsible context fields */}
+      <div style={{
+        overflow: 'hidden',
+        maxHeight: contextCollapsed ? '0px' : '2000px',
+        opacity: contextCollapsed ? 0 : 1,
+        transition: 'max-height 0.35s ease, opacity 0.25s ease',
+        display: 'flex', flexDirection: 'column', flex: contextCollapsed ? '0 0 auto' : '1 1 0',
+        minHeight: contextCollapsed ? 0 : undefined,
+      }}>
+        {/* Synopsis context box */}
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <label style={{
+              fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
+              letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text2,
+            }}>
+              Synopsis
+            </label>
+            {/* Reset icon */}
+            {synopsis.trim() && (
+              <button
+                onClick={() => setSynopsis('')}
+                title="Clear synopsis"
                 style={{
-                  width: '80px', padding: '10px 12px', fontSize: '13px', fontFamily: 'Raleway, sans-serif',
-                  background: '#1a1a1a', color: '#fff', border: `1px solid ${C.border}`,
-                  borderRadius: 0, outline: 'none', textAlign: 'center',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: '20px', height: '20px',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: C.text3, transition: 'color 0.2s',
                 }}
-              />
-              <span style={{ fontSize: '11px', fontFamily: 'Raleway, sans-serif', color: C.text3, whiteSpace: 'nowrap' }}>
-                sec
-              </span>
-            </div>
-          )}
+                onMouseEnter={e => (e.currentTarget.style.color = '#ff264a')}
+                onMouseLeave={e => (e.currentTarget.style.color = C.text3)}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                </svg>
+              </button>
+            )}
+          </div>
+          <div style={{ marginBottom: '6px', paddingLeft: '10px', borderLeft: `2px solid rgba(255,45,123,0.2)` }}>
+            <p style={{ fontSize: '10px', fontFamily: 'Raleway, sans-serif', color: 'rgba(255,255,255,0.3)', lineHeight: '1.5', margin: 0 }}>
+              Story overview, character descriptions, setting, mood, tone. Helps the AI understand context without changing your script.
+            </p>
+          </div>
+          <textarea
+            value={synopsis}
+            onChange={(e) => setSynopsis(e.target.value)}
+            placeholder="e.g. A tense thriller set in a neon-lit Tokyo nightclub. Main character Yuki (30s, Japanese woman, sharp features) is a detective undercover as a bartender. The atmosphere is smoky, dangerous, with bass-heavy music..."
+            style={{
+              width: '100%', flex: 1, minHeight: '120px', padding: '14px',
+              background: C.surface, borderWidth: '1px', borderStyle: 'solid', borderColor: C.border,
+              color: '#fff', fontSize: '13px', fontFamily: 'Raleway, sans-serif', lineHeight: '1.7',
+              resize: 'none', outline: 'none', transition: 'border-color 0.3s ease',
+            }}
+            onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,45,123,0.4)')}
+            onBlur={e => (e.currentTarget.style.borderColor = C.border)}
+          />
+        </div>
+
+        {/* Creative Direction */}
+        <div style={{ flexShrink: 0, marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <label style={{
+              fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
+              letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text2,
+            }}>
+              Creative Direction <span style={{ color: C.text3, fontWeight: 500 }}>(optional)</span>
+            </label>
+            {direction.trim() && (
+              <button
+                onClick={() => setDirection('')}
+                title="Clear direction"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: '20px', height: '20px',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: C.text3, transition: 'color 0.2s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#ff264a')}
+                onMouseLeave={e => (e.currentTarget.style.color = C.text3)}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                </svg>
+              </button>
+            )}
+          </div>
+          <textarea
+            value={direction}
+            onChange={(e) => setDirection(e.target.value)}
+            placeholder="e.g. Blade Runner 2049 look, moody neon lighting, desaturated teal/orange grade, anamorphic lens flares..."
+            rows={2}
+            style={{
+              width: '100%', padding: '14px',
+              background: C.surface, borderWidth: '1px', borderStyle: 'solid', borderColor: C.border,
+              color: '#fff', fontSize: '13px', fontFamily: 'Raleway, sans-serif',
+              resize: 'vertical', outline: 'none', transition: 'border-color 0.3s ease',
+            }}
+            onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,45,123,0.4)')}
+            onBlur={e => (e.currentTarget.style.borderColor = C.border)}
+          />
+        </div>
+
+        {/* Target Duration */}
+        <div style={{ flexShrink: 0, marginBottom: '12px' }}>
+          <label style={{
+            display: 'block', fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
+            letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text2, marginBottom: '6px',
+          }}>
+            Target Duration
+          </label>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <select
+              value={targetDuration}
+              onChange={(e) => setTargetDuration(e.target.value)}
+              style={{
+                flex: 1, padding: '10px 12px', fontSize: '13px', fontFamily: 'Raleway, sans-serif',
+                background: '#1a1a1a', color: '#fff', border: `1px solid ${C.border}`,
+                borderRadius: 0, cursor: 'pointer', outline: 'none',
+              }}
+            >
+              {DURATION_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value} style={{ background: '#1a1a1a', color: '#fff' }}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            {targetDuration === 'custom' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <input
+                  type="number"
+                  value={customDuration}
+                  onChange={(e) => setCustomDuration(e.target.value)}
+                  placeholder="120"
+                  min="10"
+                  max="3600"
+                  style={{
+                    width: '80px', padding: '10px 12px', fontSize: '13px', fontFamily: 'Raleway, sans-serif',
+                    background: '#1a1a1a', color: '#fff', border: `1px solid ${C.border}`,
+                    borderRadius: 0, outline: 'none', textAlign: 'center',
+                  }}
+                />
+                <span style={{ fontSize: '11px', fontFamily: 'Raleway, sans-serif', color: C.text3, whiteSpace: 'nowrap' }}>
+                  sec
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
