@@ -72,6 +72,7 @@ export default function ProjectWorkspace({
   const [projectCharacters, setProjectCharacters] = useState<ProjectCharacter[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
   const [selectedShotForCine, setSelectedShotForCine] = useState<Shot | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   // Keep a ref to the selected shot so the memoized callback always has the current value
   const selectedShotRef = useRef(selectedShotForCine);
@@ -135,6 +136,38 @@ export default function ProjectWorkspace({
     }
   }, [shots]);
 
+  // ── Export storyboard as PPTX ──
+  const handleExportPptx = useCallback(async () => {
+    if (exporting || shots.length === 0) return;
+    setExporting(true);
+    try {
+      const res = await fetch('/api/export-pptx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: project.id }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Export failed' }));
+        alert(err.error || 'Export failed');
+        return;
+      }
+      // Download the PPTX file
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${project.title.replace(/[^a-zA-Z0-9_\- ]/g, '_')}_Storyboard.pptx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(`Export failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setExporting(false);
+    }
+  }, [exporting, shots.length, project.id, project.title]);
+
   const tabs: { id: WorkspaceTab; label: string; count?: number }[] = [
     { id: 'script', label: 'Script' },
     { id: 'shots', label: 'Shots', count: shots.length },
@@ -160,7 +193,7 @@ export default function ProjectWorkspace({
       {/* Right: Tabbed content area */}
       <div className="workspace-main">
         {/* Tab bar */}
-        <div className="workspace-tabs">
+        <div className="workspace-tabs" style={{ display: 'flex', alignItems: 'center' }}>
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -216,6 +249,48 @@ export default function ProjectWorkspace({
               </button>
             );
           })}
+
+          {/* Export button - pushed to far right */}
+          <div style={{ marginLeft: 'auto', paddingRight: '12px' }}>
+            <button
+              onClick={handleExportPptx}
+              disabled={exporting || shots.length === 0}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 16px',
+                fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
+                letterSpacing: '0.1em', textTransform: 'uppercase' as const,
+                background: exporting || shots.length === 0
+                  ? 'rgba(255,255,255,0.04)'
+                  : 'linear-gradient(135deg, #ff264a, #ff2d7b)',
+                color: exporting || shots.length === 0 ? 'rgba(255,255,255,0.2)' : '#fff',
+                border: 'none',
+                cursor: exporting || shots.length === 0 ? 'not-allowed' : 'pointer',
+                transition: 'opacity 0.2s',
+              }}
+              onMouseEnter={e => { if (!exporting && shots.length > 0) e.currentTarget.style.opacity = '0.85'; }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+            >
+              {exporting ? (
+                <>
+                  <svg style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.3" />
+                    <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  Export PPTX
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Tab content */}
