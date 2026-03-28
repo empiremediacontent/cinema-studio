@@ -1,0 +1,25 @@
+[functions]
+  external_node_modules = ["@google/generative-ai"]
+  node_bundler = "esbuild"
+
+# Extend timeout for AI generation functions (default is 10s)
+[functions."api/generate-shots"]
+  timeout = 60
+
+[functions."api/generate-image"]
+  timeout = 60
+
+[functions."api/generate-video"]
+  timeout = 120
+
+[functions."api/generate-voice"]
+  timeout = 30
+
+[functions."api/generate-avatar"]
+  timeout = 30
+
+[functions."api/generation-status"]
+  timeout = 30
+
+[functions."api/export"]
+  timeout = 60
