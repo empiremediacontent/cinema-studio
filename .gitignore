@@ -39,3 +39,6 @@ docs/History/
 docs/Site locations/
 client_secret_*.json
 .env.local
+
+# Local Netlify folder
+.netlify
