@@ -9,7 +9,13 @@ import AssetLibrary from '@/components/AssetLibrary';
 import AvatarLibrary from '@/components/AvatarLibrary';
 import CinematographyPanel from '@/components/CinematographyPanel';
 import MoodBoard from '@/components/MoodBoard';
+import PipelinePanel from '@/components/PipelinePanel';
 import type { Project, Shot, CinematicOptionsMap, ProjectCharacter } from '@/lib/types/database';
+
+const C = {
+  surface: 'rgba(255,255,255,0.04)',
+  border: 'rgba(255,255,255,0.08)',
+};
 
 type WorkspaceTab = 'script' | 'shots' | 'characters' | 'cinematography' | 'timeline' | 'assets' | 'moodboard';
 
@@ -73,6 +79,7 @@ export default function ProjectWorkspace({
   const [loadingOptions, setLoadingOptions] = useState(false);
   const [selectedShotForCine, setSelectedShotForCine] = useState<Shot | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [showPipeline, setShowPipeline] = useState(false);
 
   // Keep a ref to the selected shot so the memoized callback always has the current value
   const selectedShotRef = useRef(selectedShotForCine);
@@ -250,8 +257,29 @@ export default function ProjectWorkspace({
             );
           })}
 
-          {/* Export button - pushed to far right */}
-          <div style={{ marginLeft: 'auto', paddingRight: '12px' }}>
+          {/* Pipeline + Export buttons - pushed to far right */}
+          <div style={{ marginLeft: 'auto', paddingRight: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              onClick={() => setShowPipeline(prev => !prev)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 14px',
+                fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
+                letterSpacing: '0.1em', textTransform: 'uppercase' as const,
+                background: showPipeline ? 'rgba(255,45,123,0.12)' : C.surface,
+                color: showPipeline ? '#ff2d7b' : 'rgba(255,255,255,0.4)',
+                border: `1px solid ${showPipeline ? 'rgba(255,45,123,0.3)' : C.border}`,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => { if (!showPipeline) { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; } }}
+              onMouseLeave={e => { if (!showPipeline) { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.borderColor = C.border; } }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+              Automate
+            </button>
             <button
               onClick={handleExportPptx}
               disabled={exporting || shots.length === 0}
@@ -292,6 +320,20 @@ export default function ProjectWorkspace({
             </button>
           </div>
         </div>
+
+        {/* Pipeline Panel (collapsible) */}
+        {showPipeline && (
+          <PipelinePanel
+            projectId={project.id}
+            onPipelineComplete={() => {
+              // Refresh shots when pipeline completes
+              fetch(`/api/shots?projectId=${project.id}`)
+                .then(res => res.json())
+                .then(data => { if (data.shots) setShots(data.shots); })
+                .catch(() => {});
+            }}
+          />
+        )}
 
         {/* Tab content */}
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>

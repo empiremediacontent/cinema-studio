@@ -257,6 +257,44 @@ export interface GenerationQueueItem {
   completed_at: string | null;
 }
 
+// --- Automation Pipeline Tables ---
+
+export type PipelineJobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+export type PipelineAgentType = 'script_analysis' | 'visual_direction' | 'character_extraction' | 'image_generation' | 'export_compile';
+export type PipelineTaskStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+
+export interface PipelineJob {
+  id: string;
+  project_id: string;
+  user_id: string;
+  status: PipelineJobStatus;
+  agents_requested: PipelineAgentType[];
+  total_steps: number;
+  completed_steps: number;
+  current_agent: PipelineAgentType | null;
+  error_message: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PipelineTask {
+  id: string;
+  job_id: string;
+  project_id: string;
+  user_id: string;
+  agent_type: PipelineAgentType;
+  status: PipelineTaskStatus;
+  shot_id: string | null;
+  input_data: Record<string, unknown>;
+  output_data: Record<string, unknown>;
+  error_message: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+}
+
 export interface ProjectCinematographyDefaults {
   id: string;
   project_id: string;
