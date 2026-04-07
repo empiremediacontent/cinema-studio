@@ -14,9 +14,10 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { shotId, prompt, type, referenceImageUrl } = await request.json();
+    const { shotId, prompt, type, referenceImageUrl, talentRefs } = await request.json();
     // type: 'nano' | 'contact_sheet'
-    // referenceImageUrl: optional user-uploaded talent image for character consistency
+    // talentRefs: array of { name, imageUrl, description } for all selected talent
+    // referenceImageUrl: legacy single-image fallback
 
     if (!shotId || !prompt?.trim()) {
       return NextResponse.json({ error: 'Shot ID and prompt are required' }, { status: 400 });
@@ -39,9 +40,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Image generation service not configured. Set KIE_API_KEY in environment variables.' }, { status: 500 });
     }
 
-    // Build image_input array if reference image provided
+    // Build image_input array from all talent reference images
     const imageInput: string[] = [];
-    if (referenceImageUrl) {
+    const talentDescriptions: string[] = [];
+
+    if (talentRefs && Array.isArray(talentRefs)) {
+      for (const ref of talentRefs) {
+        if (ref.imageUrl) imageInput.push(ref.imageUrl);
+        const desc = ref.description ? `${ref.name} (${ref.description})` : ref.name;
+        talentDescriptions.push(desc);
+      }
+    } else if (referenceImageUrl) {
+      // Legacy single-image fallback
       imageInput.push(referenceImageUrl);
     }
 
@@ -93,10 +103,19 @@ export async function POST(request: NextRequest) {
       .eq('id', shotId)
       .eq('user_id', user.id);
 
+    // Build the enhanced prompt: inject talent identity descriptions
+    let enhancedPrompt = prompt.trim();
+    if (talentDescriptions.length > 0) {
+      const talentBlock = talentDescriptions.length === 1
+        ? `IMPORTANT: The reference image provided is of ${talentDescriptions[0]}. This person MUST appear in the generated image exactly as they look in the reference photo. Maintain their exact facial features, skin tone, hair, and overall appearance.`
+        : `IMPORTANT: ${talentDescriptions.length} reference images are provided. ${talentDescriptions.map((d, i) => `Reference image ${i + 1} is ${d}`).join('. ')}. These people MUST appear in the generated image exactly as they look in their reference photos. Maintain their exact facial features, skin tone, hair, and overall appearance.`;
+      enhancedPrompt = talentBlock + '\n\n' + enhancedPrompt;
+    }
+
     // Build Kie.ai input payload per docs:
     // https://docs.kie.ai/market/google/nanobanana2
     const input: Record<string, unknown> = {
-      prompt: prompt.trim().substring(0, 20000),
+      prompt: enhancedPrompt.substring(0, 20000),
       aspect_ratio: type === 'contact_sheet' ? '1:1' : '16:9',
       resolution: '1K',
       output_format: 'png',

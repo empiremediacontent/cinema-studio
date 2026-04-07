@@ -118,6 +118,7 @@ export default function ProjectWorkspace({
           targetDuration: projectSettings.target_duration_seconds || undefined,
           projectMode: projectSettings.project_mode || undefined,
           synopsis: projectSettings.description || undefined,
+          contextData: projectSettings.context_data || undefined,
         }),
         signal: controller.signal,
       });
@@ -884,7 +885,7 @@ export default function ProjectWorkspace({
           )}
 
           {activeTab === 'timeline' && (
-            <TimelineEditor shots={shots} projectId={project.id} />
+            <TimelineEditor shots={shots} projectId={project.id} onShotsChanged={setShots} onShotUpdated={handleShotUpdated} />
           )}
           {activeTab === 'assets' && (
             <AssetLibrary projectId={project.id} />

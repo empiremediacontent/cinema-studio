@@ -228,10 +228,26 @@ export default function ShotCard({
     setGenerating(type === 'contact_sheet' ? 'contact_sheet' : 'image');
     setError(null);
     try {
+      // Build talent references: send ALL selected talent images and descriptions
+      const talentRefs = selectedTalents
+        .filter(t => t.thumbnailUrl || t.referenceSheetUrl)
+        .map(t => ({
+          name: t.name,
+          imageUrl: t.referenceSheetUrl || t.thumbnailUrl,
+          description: t.description || undefined,
+        }));
+
       const res = await fetch('/api/generate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shotId: shot.id, prompt, type, referenceImageUrl: selectedTalents[0]?.referenceSheetUrl || undefined }),
+        body: JSON.stringify({
+          shotId: shot.id,
+          prompt,
+          type,
+          talentRefs: talentRefs.length > 0 ? talentRefs : undefined,
+          // Legacy fallback
+          referenceImageUrl: talentRefs.length > 0 ? talentRefs[0].imageUrl : undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || `Failed (${res.status})`); setGenerating('idle'); return; }

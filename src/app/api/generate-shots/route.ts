@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { SHOT_GENERATION_SYSTEM_PROMPT, buildShotGenerationPrompt } from '@/lib/ai/prompts';
+import { SHOT_GENERATION_SYSTEM_PROMPT, buildShotGenerationPrompt, type ShotGenerationContext } from '@/lib/ai/prompts';
 
 export const runtime = 'edge';
 
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Parse request
-    const { projectId, script, creativeDirection, targetDuration } = await request.json();
+    const { projectId, script, creativeDirection, targetDuration, projectMode, synopsis, contextData } = await request.json();
 
     if (!projectId || !script?.trim()) {
       return NextResponse.json({ error: 'Project ID and script are required' }, { status: 400 });
@@ -41,7 +41,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'AI service not configured' }, { status: 500 });
     }
 
-    const userPrompt = SHOT_GENERATION_SYSTEM_PROMPT + '\n\n---\n\n' + buildShotGenerationPrompt(script, creativeDirection, targetDuration ? Number(targetDuration) : undefined);
+    const genContext: ShotGenerationContext = {
+      creativeDirection,
+      targetDurationSeconds: targetDuration ? Number(targetDuration) : undefined,
+      projectMode,
+      synopsis,
+      contextData,
+    };
+
+    const userPrompt = SHOT_GENERATION_SYSTEM_PROMPT + '\n\n---\n\n' + buildShotGenerationPrompt(script, genContext);
 
     let responseText: string;
     try {

@@ -23,7 +23,7 @@ export type CinematicOptionType =
 
 export type GenderPresentation = 'masculine' | 'feminine' | 'androgynous' | 'other';
 export type AgeAppearance = 'child' | 'teen' | 'young_adult' | 'adult' | 'senior';
-export type ShotCategory = 'narrative' | 'title' | 'graphic' | 'credits' | 'transition' | 'voiceover';
+export type ShotCategory = 'narrative' | 'live_action' | 'title' | 'graphic' | 'fsg' | 'mogfx' | 'ost' | 'credits' | 'end_credits' | 'transition' | 'voiceover';
 export type MotionIntensity = 'subtle' | 'moderate' | 'dramatic';
 
 export type CameraMovement =

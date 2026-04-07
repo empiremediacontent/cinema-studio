@@ -103,18 +103,83 @@ Rules for dialogue/narration:
 CRITICAL: Return ONLY the JSON array. No markdown, no code fences, no explanation. Just valid JSON.`;
 
 
-export function buildShotGenerationPrompt(script: string, creativeDirection?: string, targetDurationSeconds?: number): string {
+export interface ShotGenerationContext {
+  creativeDirection?: string;
+  targetDurationSeconds?: number;
+  projectMode?: string;
+  synopsis?: string;
+  contextData?: {
+    inspiration?: string;
+    references?: string;
+    character_description?: string;
+    casting_voice_talent?: string;
+    style_references?: string;
+    animation_style?: string;
+    design_notes?: string;
+    narration_style?: string;
+    timing_notes?: string;
+    humor_notes?: string;
+    sound_design?: string;
+    color_palette?: string;
+    font_preference?: string;
+  };
+}
+
+export function buildShotGenerationPrompt(script: string, context?: ShotGenerationContext): string {
+  const ctx = context || {};
   let prompt = `Analyze the following script and generate a complete shot list.\n\n`;
 
-  if (targetDurationSeconds) {
-    const minutes = Math.round(targetDurationSeconds / 60 * 10) / 10;
-    prompt += `## TARGET DURATION\nThe total video should be approximately ${targetDurationSeconds} seconds (${minutes} minutes). `;
+  // Production mode
+  if (ctx.projectMode) {
+    prompt += `## PRODUCTION MODE\nThis is a ${ctx.projectMode === 'animation' ? 'animation' : 'live-action'} project. `;
+    if (ctx.projectMode === 'animation') {
+      prompt += `Generate prompts suited for animated visual style, not photorealistic.\n\n`;
+    } else {
+      prompt += `Generate prompts suited for photorealistic, cinematic imagery.\n\n`;
+    }
+  }
+
+  // Target duration
+  if (ctx.targetDurationSeconds) {
+    const minutes = Math.round(ctx.targetDurationSeconds / 60 * 10) / 10;
+    prompt += `## TARGET DURATION\nThe total video should be approximately ${ctx.targetDurationSeconds} seconds (${minutes} minutes). `;
     prompt += `Distribute shot durations so the combined total is close to this target. `;
     prompt += `Individual shots can range from 3 to 30 seconds depending on content.\n\n`;
   }
 
-  if (creativeDirection) {
-    prompt += `## CREATIVE DIRECTION\n${creativeDirection}\n\n`;
+  // Synopsis / project overview
+  if (ctx.synopsis) {
+    prompt += `## PROJECT OVERVIEW\n${ctx.synopsis}\n\n`;
+  }
+
+  // Creative direction (atmosphere fields)
+  if (ctx.creativeDirection) {
+    prompt += `## CREATIVE DIRECTION\n${ctx.creativeDirection}\n\n`;
+  }
+
+  // Rich context data: character, production, and style details
+  const cd = ctx.contextData;
+  if (cd) {
+    const sections: string[] = [];
+
+    if (cd.character_description) sections.push(`Character Details: ${cd.character_description}`);
+    if (cd.casting_voice_talent) sections.push(`Casting / Voice Talent: ${cd.casting_voice_talent}`);
+    if (cd.inspiration) sections.push(`Inspiration / References: ${cd.inspiration}`);
+    if (cd.references) sections.push(`Visual / Stylistic References: ${cd.references}`);
+    if (cd.style_references) sections.push(`Style References: ${cd.style_references}`);
+    if (cd.animation_style) sections.push(`Animation Style: ${cd.animation_style}`);
+    if (cd.design_notes) sections.push(`Design Notes: ${cd.design_notes}`);
+    if (cd.narration_style) sections.push(`Narration Style: ${cd.narration_style}`);
+    if (cd.timing_notes) sections.push(`Timing / Pacing Notes: ${cd.timing_notes}`);
+    if (cd.humor_notes) sections.push(`Humor / Tone Notes: ${cd.humor_notes}`);
+    if (cd.sound_design) sections.push(`Sound Design: ${cd.sound_design}`);
+    if (cd.color_palette) sections.push(`Color Palette: ${cd.color_palette}`);
+    if (cd.font_preference) sections.push(`Typography: ${cd.font_preference}`);
+
+    if (sections.length > 0) {
+      prompt += `## PROJECT CONTEXT\nUse the following details to inform the visual style, character descriptions, and mood of every shot:\n`;
+      prompt += sections.join('\n') + '\n\n';
+    }
   }
 
   prompt += `## SCRIPT\n${script}\n\n`;
