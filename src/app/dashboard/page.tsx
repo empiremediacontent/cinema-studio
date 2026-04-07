@@ -26,7 +26,7 @@ export default async function DashboardPage() {
   const projects = await getProjects();
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+    <div className="min-h-screen" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
       {/* Top bar */}
       <header
         className="dash-header-pad"

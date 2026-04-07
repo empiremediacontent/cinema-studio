@@ -14,8 +14,8 @@ const DARK = {
   surface: 'rgba(255,255,255,0.04)',
   border: 'rgba(255,255,255,0.08)',
   text: '#fff',
-  text2: 'rgba(255,255,255,0.6)',
-  text3: 'rgba(255,255,255,0.3)',
+  text2: 'rgba(255,255,255,0.75)',
+  text3: 'rgba(255,255,255,0.5)',
   accent: '#ff2d7b',
   accentBg: 'rgba(255,45,123,0.12)',
 };

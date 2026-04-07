@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
         sort_order: index,
         title: (shot.title as string) || `Shot ${index + 1}`,
         description: (shot.notes as string) || null,
-        duration_seconds: Number(shot.duration_seconds) || 8,
+        duration_seconds: Number(shot.duration_seconds) || null,
         shot_type: shotType,
         camera_movement: (shot.camera_movement as string) || null,
         dialogue: (shot.dialogue as string) || null,

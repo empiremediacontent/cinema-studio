@@ -89,6 +89,9 @@ const fetchCinematicOptions = async (): Promise<CinematicOptionsMap> => {
 
 interface ShotCineQuickSelectProps {
   shotId: string;
+  initialSelections?: Record<string, string | null> | null;
+  initialCameraMovement?: CameraMovement | null;
+  initialMotionIntensity?: MotionIntensity | null;
   onSelectionsChanged?: (selections: Record<string, string | null>, cameraMovement: CameraMovement, motionIntensity: MotionIntensity) => void;
 }
 
@@ -99,35 +102,45 @@ const C = {
   elevated: 'rgba(255,255,255,0.06)',
   border: 'rgba(255,255,255,0.08)',
   text: '#fff',
-  text2: 'rgba(255,255,255,0.6)',
-  text3: 'rgba(255,255,255,0.3)',
+  text2: 'rgba(255,255,255,0.75)',
+  text3: 'rgba(255,255,255,0.5)',
   accent: '#ff2d7b',
   accentBg: 'rgba(255,45,123,0.12)',
 };
 
-export default function ShotCineQuickSelect({ shotId, onSelectionsChanged }: ShotCineQuickSelectProps) {
+export default function ShotCineQuickSelect({ shotId, initialSelections: initSels, initialCameraMovement, initialMotionIntensity, onSelectionsChanged }: ShotCineQuickSelectProps) {
   const [options, setOptions] = useState<CinematicOptionsMap | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selections, setSelections] = useState<Record<string, string | null>>({});
-  const [cameraMovement, setCameraMovement] = useState<CameraMovement>('static');
-  const [motionIntensity, setMotionIntensity] = useState<MotionIntensity>('moderate');
+  const [selections, setSelections] = useState<Record<string, string | null>>(() => {
+    // Initialize from saved shot metadata if available
+    const base: Record<string, string | null> = {};
+    SLOT_ORDER.forEach((type) => {
+      base[type] = initSels?.[type] ?? null;
+    });
+    return base;
+  });
+  const [cameraMovement, setCameraMovement] = useState<CameraMovement>(initialCameraMovement || 'static');
+  const [motionIntensity, setMotionIntensity] = useState<MotionIntensity>(initialMotionIntensity || 'moderate');
   const [composedPrompt, setComposedPrompt] = useState('');
+  const [applied, setApplied] = useState(false);
 
   useEffect(() => {
     const loadOptions = async () => {
       const opts = await fetchCinematicOptions();
       setOptions(opts);
       setLoading(false);
-
-      const initialSelections: Record<string, string | null> = {};
-      SLOT_ORDER.forEach((type) => {
-        initialSelections[type] = null;
-      });
-      setSelections(initialSelections);
     };
 
     loadOptions();
   }, []);
+
+  // Rebuild composed prompt when options load (for restored selections)
+  useEffect(() => {
+    if (options && !loading) {
+      updateComposedPrompt(selections, cameraMovement, motionIntensity);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options, loading]);
 
   const updateComposedPrompt = useCallback(
     (sels: Record<string, string | null>, movement: CameraMovement, intensity: MotionIntensity) => {
@@ -148,12 +161,9 @@ export default function ShotCineQuickSelect({ shotId, onSelectionsChanged }: Sho
 
       const prompt = fragments.join(', ');
       setComposedPrompt(prompt);
-
-      if (onSelectionsChanged) {
-        onSelectionsChanged(sels, movement, intensity);
-      }
+      // Do NOT auto-fire onSelectionsChanged here. Only fire on explicit Apply.
     },
-    [options, onSelectionsChanged]
+    [options]
   );
 
   const handleSelectionChange = (type: CinematicOptionType, value: string | null) => {
@@ -186,6 +196,8 @@ export default function ShotCineQuickSelect({ shotId, onSelectionsChanged }: Sho
   const handleApply = () => {
     if (onSelectionsChanged) {
       onSelectionsChanged(selections, cameraMovement, motionIntensity);
+      setApplied(true);
+      setTimeout(() => setApplied(false), 2000);
     }
   };
 
@@ -380,17 +392,17 @@ export default function ShotCineQuickSelect({ shotId, onSelectionsChanged }: Sho
             fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
-            backgroundColor: C.accent,
-            color: '#000',
+            backgroundColor: applied ? '#00c853' : C.accent,
+            color: applied ? '#fff' : '#000',
             border: 'none',
             borderRadius: 0,
             cursor: 'pointer',
-            transition: 'opacity 0.2s',
+            transition: 'all 0.2s',
           }}
           onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = '0.8')}
           onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = '1')}
         >
-          Apply to Shot
+          {applied ? 'Applied!' : 'Apply to Shot'}
         </button>
         <button
           onClick={handleClear}

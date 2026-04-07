@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     const { data, error } = await supabase.from('assets').insert({
       user_id: user.id,
       project_id: projectId,
-      asset_type: assetType || 'other',
+      asset_type: assetType || 'talent',
       name,
       description: `Generated from shot`,
       thumbnail_url: thumbnailUrl,

@@ -10,7 +10,7 @@ export type ShotType = 'wide' | 'medium' | 'medium_close_up' | 'close_up' | 'ext
 export type GenerationModel = 'nano_banana_pro' | 'flux_pro' | 'veo_3_1_fast' | 'veo_3_1_standard' | 'kling_3_0' | 'elevenlabs' | 'heygen' | 'claude';
 export type GenerationType = 'image' | 'video' | 'voice' | 'avatar' | 'script_analysis' | 'contact_sheet';
 export type GenerationStatus = 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled';
-export type AssetType = 'talent' | 'product' | 'background' | 'audio' | 'lut' | 'other';
+export type AssetType = 'talent' | 'product' | 'background' | 'audio' | 'deleted';
 export type ExportResolution = '720p' | '1080p' | '2k' | '4k';
 export type ExportFormat = 'mp4' | 'mov' | 'webm';
 export type ExportStatus = 'queued' | 'rendering' | 'completed' | 'failed';
@@ -45,6 +45,29 @@ export interface Profile {
   updated_at: string;
 }
 
+// Structured context data matching the storyboard reference format
+export interface ProjectContextData {
+  production_notes?: {
+    inspiration?: string;
+    references?: string;
+    character_description?: string;
+    casting_voice_talent?: string;
+  };
+  character_design?: {
+    style_references?: string;
+    animation_style?: string;
+    notes?: string;
+  };
+  atmosphere?: {
+    narration_style?: string;
+    timing_notes?: string;
+    humor_notes?: string;
+    sound_design?: string;
+    color_palette?: string;
+    font_preference?: string;
+  };
+}
+
 export interface Project {
   id: string;
   user_id: string;
@@ -55,6 +78,9 @@ export interface Project {
   thumbnail_url: string | null;
   timeline_state: Record<string, unknown>;
   status: ProjectStatus;
+  target_duration_seconds: number | null;
+  project_mode: 'live_action' | 'animation' | null;
+  context_data: ProjectContextData;
   created_at: string;
   updated_at: string;
 }

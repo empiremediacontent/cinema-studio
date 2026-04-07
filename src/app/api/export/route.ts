@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       resolution: resolution || '1080p',
       format: format || 'mp4',
       total_shots: shots.length,
-      total_duration: shots.reduce((sum, s) => sum + (Number(s.duration_seconds) || 8), 0),
+      total_duration: shots.reduce((sum, s) => sum + (Number(s.duration_seconds) || 4), 0),
       shots: shots.map((s, i) => ({
         order: i + 1,
         title: s.title,

@@ -232,20 +232,24 @@ export default function TalentSelector({
 
         {open && (
           <>
-            <div style={{ position: 'fixed', inset: '0', zIndex: 40 }} onClick={() => setOpen(false)} />
-            <div style={{
-              position: 'absolute',
-              left: '0',
-              top: '100%',
-              marginTop: '4px',
-              zIndex: 50,
-              width: '300px',
-              maxHeight: '360px',
-              overflowY: 'auto',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
-              background: '#1a1a1a',
-              border: '1px solid rgba(255,255,255,0.12)',
-            }}>
+            <div style={{ position: 'fixed', inset: '0', zIndex: 40, overflow: 'hidden' }} onClick={() => setOpen(false)} />
+            <div
+              style={{
+                position: 'absolute',
+                left: '0',
+                top: '100%',
+                marginTop: '4px',
+                zIndex: 50,
+                width: '300px',
+                maxHeight: '280px',
+                overflowY: 'auto',
+                overscrollBehavior: 'contain',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+                background: '#1a1a1a',
+                border: '1px solid rgba(255,255,255,0.12)',
+              }}
+              onWheel={(e) => e.stopPropagation()}
+            >
               {/* Header */}
               <div style={{
                 padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)',
@@ -318,7 +322,7 @@ export default function TalentSelector({
                   onMouseLeave={(e) => (e.currentTarget.style.background = activeIds.length === 0 ? 'rgba(255,45,123,0.05)' : 'transparent')}
                 >
                   <div style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: 'rgba(255,255,255,0.04)' }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2">
                       <circle cx="12" cy="12" r="10" />
                       <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
                     </svg>
@@ -368,7 +372,7 @@ export default function TalentSelector({
                       <img src={talent.thumbnailUrl} alt="" style={{ width: '28px', height: '28px', objectFit: 'cover', flexShrink: 0 }} />
                     ) : (
                       <div style={{ width: '28px', height: '28px', flexShrink: 0, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2">
                           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                           <circle cx="12" cy="7" r="4" />
                         </svg>
@@ -377,7 +381,7 @@ export default function TalentSelector({
                     <div style={{ textAlign: 'left', minWidth: 0, flex: 1 }}>
                       <span style={{ fontSize: '12px', fontWeight: 600, display: 'block', color: '#fff', fontFamily: 'Raleway, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{talent.name}</span>
                       {talent.description && (
-                        <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', fontFamily: 'Raleway, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{talent.description}</p>
+                        <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', fontFamily: 'Raleway, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{talent.description}</p>
                       )}
                     </div>
                     {!isMulti && isActive && (
@@ -391,8 +395,8 @@ export default function TalentSelector({
 
               {talents.length === 0 && !loading && (
                 <div style={{ padding: '16px 12px', textAlign: 'center' }}>
-                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: '0', fontFamily: 'Raleway, sans-serif' }}>No talent uploaded yet</p>
-                  <p style={{ fontSize: '10px', margin: '4px 0 0 0', color: 'rgba(255,255,255,0.2)', fontFamily: 'Raleway, sans-serif' }}>Upload a headshot to anchor character identity</p>
+                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', margin: '0', fontFamily: 'Raleway, sans-serif' }}>No talent uploaded yet</p>
+                  <p style={{ fontSize: '10px', margin: '4px 0 0 0', color: 'rgba(255,255,255,0.4)', fontFamily: 'Raleway, sans-serif' }}>Upload a headshot to anchor character identity</p>
                 </div>
               )}
 
@@ -452,12 +456,12 @@ export default function TalentSelector({
               <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           ) : (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
           )}
-          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', fontFamily: 'Montserrat, sans-serif', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Upload</span>
+          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', fontFamily: 'Montserrat, sans-serif', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Upload</span>
         </button>
 
         {talents.map((talent) => {

@@ -113,7 +113,7 @@ export default function Home() {
               letterSpacing: '0.10em', transition: 'color 0.4s ease',
               color: activeSection === s.id
                 ? (scrolled ? 'var(--gray-400)' : 'rgba(255,255,255,0.35)')
-                : (scrolled ? 'var(--text)' : 'rgba(255,255,255,0.6)'),
+                : (scrolled ? 'var(--text)' : 'rgba(255,255,255,0.75)'),
             }}>
               {s.label}
             </button>
@@ -179,7 +179,7 @@ export default function Home() {
           </h1>
 
           <p className="body-text" style={{
-            color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(13px, 1.2vw, 15px)',
+            color: 'rgba(255,255,255,0.75)', fontSize: 'clamp(13px, 1.2vw, 15px)',
             maxWidth: '520px', lineHeight: '1.8',
             marginBottom: 'clamp(30px, 4vh, 50px)',
           }}>
@@ -348,7 +348,7 @@ export default function Home() {
                       <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
                       <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
                     </div>
-                    <span style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '8px', fontWeight: 700, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase' as const, letterSpacing: '0.1em' }}>CS</span>
+                    <span style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '8px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' as const, letterSpacing: '0.1em' }}>CS</span>
                   </div>
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
                     {card.icon}
@@ -357,7 +357,7 @@ export default function Home() {
                     </span>
                   </div>
                   <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span className="heading-label" style={{ color: 'rgba(255,255,255,0.3)', fontSize: '9px' }}>{card.subtitle}</span>
+                    <span className="heading-label" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '9px' }}>{card.subtitle}</span>
                     <span style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '18px', fontWeight: 900, color: 'rgba(255,255,255,0.06)' }}>CS</span>
                   </div>
                 </div>
@@ -375,7 +375,7 @@ export default function Home() {
           <h2 className="heading-display" style={{ fontSize: 'clamp(32px, 5vw, 72px)', color: '#fff', marginBottom: '24px' }}>
             The <span style={{ color: '#ff2d7b' }}>4-Step</span> Method
           </h2>
-          <span className="heading-label" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', letterSpacing: '0.15em' }}>
+          <span className="heading-label" style={{ color: 'rgba(255,255,255,0.75)', fontSize: '11px', letterSpacing: '0.15em' }}>
             Write, Generate, Direct, Render
             <span className="divider-line-light" />
           </span>
@@ -452,7 +452,7 @@ export default function Home() {
           <h2 className="heading-display" style={{ fontSize: 'clamp(32px, 6vw, 90px)', color: '#fff', marginBottom: '24px' }}>
             <span style={{ color: '#ff2d7b' }}>Start</span> Creating
           </h2>
-          <span className="heading-label" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', letterSpacing: '0.15em' }}>
+          <span className="heading-label" style={{ color: 'rgba(255,255,255,0.75)', fontSize: '11px', letterSpacing: '0.15em' }}>
             Style is Everything
             <span className="divider-line-light" />
           </span>

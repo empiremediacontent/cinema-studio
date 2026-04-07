@@ -57,7 +57,7 @@ export default function TimelineEditor({
     const sortedShots = [...shots].sort((a, b) => a.sort_order - b.sort_order);
 
     for (const shot of sortedShots) {
-      const duration = shot.duration_seconds || 8;
+      const duration = shot.duration_seconds || 4;
 
       videoClips.push({
         id: `v-${shot.id}`,
@@ -141,7 +141,7 @@ export default function TimelineEditor({
       ticks.push(
         <div key={t} className="absolute top-0 flex flex-col items-center" style={{ left: x }}>
           <div className="w-px h-3" style={{ background: 'rgba(255,255,255,0.12)' }} />
-          <span className="text-[10px] mt-0.5 select-none" style={{ color: 'rgba(255,255,255,0.3)' }}>
+          <span className="text-[10px] mt-0.5 select-none" style={{ color: 'rgba(255,255,255,0.5)' }}>
             {mins}:{String(secs).padStart(2, '0')}
           </span>
         </div>
@@ -181,19 +181,19 @@ export default function TimelineEditor({
           )}
         </button>
 
-        <span className="text-[12px] font-mono ml-2" style={{ color: 'rgba(255,255,255,0.6)' }}>
+        <span className="text-[12px] font-mono ml-2" style={{ color: 'rgba(255,255,255,0.75)' }}>
           {Math.floor(playheadTime / 60)}:{String(Math.floor(playheadTime % 60)).padStart(2, '0')}.{String(Math.floor((playheadTime % 1) * 10))}
-          <span style={{ color: 'rgba(255,255,255,0.3)' }}> / {Math.floor(totalDuration / 60)}:{String(Math.floor(totalDuration % 60)).padStart(2, '0')}</span>
+          <span style={{ color: 'rgba(255,255,255,0.5)' }}> / {Math.floor(totalDuration / 60)}:{String(Math.floor(totalDuration % 60)).padStart(2, '0')}</span>
         </span>
 
         <div className="flex-1" />
 
         <div className="flex items-center gap-2">
           <button onClick={() => setZoom(Math.max(0.25, zoom - 0.25))} className="text-[12px] px-2 py-1 transition-colors"
-            style={{ color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>-</button>
-          <span className="text-[11px] w-10 text-center" style={{ color: 'rgba(255,255,255,0.3)' }}>{Math.round(zoom * 100)}%</span>
+            style={{ color: 'rgba(255,255,255,0.75)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>-</button>
+          <span className="text-[11px] w-10 text-center" style={{ color: 'rgba(255,255,255,0.5)' }}>{Math.round(zoom * 100)}%</span>
           <button onClick={() => setZoom(Math.min(4, zoom + 0.25))} className="text-[12px] px-2 py-1 transition-colors"
-            style={{ color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>+</button>
+            style={{ color: 'rgba(255,255,255,0.75)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>+</button>
         </div>
       </div>
 
@@ -209,7 +209,7 @@ export default function TimelineEditor({
                 className="flex items-center px-3"
                 style={{ height: TRACK_HEIGHT, borderBottom: '1px solid rgba(255,255,255,0.08)' }}
               >
-                <span className="text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.6)' }}>{track.label}</span>
+                <span className="text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.75)' }}>{track.label}</span>
               </div>
             ))}
           </div>
@@ -275,10 +275,10 @@ export default function TimelineEditor({
 
       {/* Footer */}
       <div className="flex items-center justify-between mt-2 px-1">
-        <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
+        <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.5)' }}>
           {shots.length} shots &middot; {tracks[0].clips.filter(c => c.hasMedia).length} with video &middot; {tracks[1].clips.length} dialogue &middot; {tracks[2].clips.length} narration
         </span>
-        <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
+        <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.5)' }}>
           Timeline view — drag to reorder (coming soon)
         </span>
       </div>

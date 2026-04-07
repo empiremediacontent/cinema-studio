@@ -147,7 +147,7 @@ export default function LoginPage() {
             position: 'absolute',
             top: '50px',
             left: '50px',
-            color: 'rgba(255,255,255,0.3)',
+            color: 'rgba(255,255,255,0.5)',
             fontSize: '10px',
           }}
         >

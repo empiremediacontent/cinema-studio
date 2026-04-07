@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import type { Shot } from '@/lib/types/database';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import type { ProjectContextData } from '@/lib/types/database';
 
 const C = {
   bg: '#0a0a0a',
@@ -9,10 +9,12 @@ const C = {
   surface: 'rgba(255,255,255,0.04)',
   border: 'rgba(255,255,255,0.08)',
   text: '#fff',
-  text2: 'rgba(255,255,255,0.6)',
-  text3: 'rgba(255,255,255,0.3)',
+  text2: 'rgba(255,255,255,0.75)',
+  text3: 'rgba(255,255,255,0.5)',
   accent: '#ff2d7b',
   accentBg: 'rgba(255,45,123,0.12)',
+  teal: '#00e5ff',
+  tealBg: 'rgba(0,229,255,0.06)',
 };
 
 const DURATION_OPTIONS = [
@@ -29,247 +31,416 @@ const DURATION_OPTIONS = [
 ];
 
 /**
- * ScriptPanel is the left sidebar. It handles:
- * 1. Synopsis context box (story context for the AI)
- * 2. Creative direction
- * 3. Target duration
- * 4. Generate button
+ * ScriptPanel (Context Tab)
  *
- * The actual script editing lives in the Script tab (ScriptEditor component).
- * This panel receives the script text as a prop so it can send it to the API.
+ * Structured to match the reference storyboard format:
+ *   Section 1: Production Notes (inspiration, references, character description, casting)
+ *   Section 2: Character Design (style references, animation style, notes)
+ *   Section 3: Atmosphere / Tone / Direction (narration, timing, humor, sound, color, font)
+ *
+ * Plus: Production Mode toggle and Target Duration selector.
+ * All fields auto-save on blur. Parent state is updated via onSettingsChanged callback.
  */
+
+export interface ProjectSettings {
+  description: string;
+  creative_direction: string;
+  target_duration_seconds: number | null;
+  project_mode: 'live_action' | 'animation';
+  context_data: ProjectContextData;
+}
+
+type SectionId = 'production' | 'character' | 'atmosphere';
+
 export default function ScriptPanel({
   projectId,
-  script,
-  initialDirection,
-  onShotsGenerated,
+  settings,
+  onSettingsChanged,
 }: {
   projectId: string;
-  script: string;
-  initialDirection: string | null;
-  onShotsGenerated: (shots: Shot[]) => void;
+  settings: ProjectSettings;
+  onSettingsChanged: (updated: Partial<ProjectSettings>) => void;
 }) {
-  const [synopsis, setSynopsis] = useState('');
-  const [direction, setDirection] = useState(initialDirection || '');
-  const [targetDuration, setTargetDuration] = useState('');
-  const [customDuration, setCustomDuration] = useState('');
-  const [contextCollapsed, setContextCollapsed] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [projectMode, setProjectMode] = useState<'live_action' | 'animation'>(settings.project_mode);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedSections, setExpandedSections] = useState<Set<SectionId>>(new Set(['production']));
 
-  async function handleGenerate() {
-    if (!script.trim()) return;
+  // Duration state
+  const initDurVal = settings.target_duration_seconds
+    ? (DURATION_OPTIONS.find(o => o.value === String(settings.target_duration_seconds)) ? String(settings.target_duration_seconds) : 'custom')
+    : '';
+  const [targetDuration, setTargetDuration] = useState(initDurVal);
+  const [customDuration, setCustomDuration] = useState(
+    settings.target_duration_seconds && !DURATION_OPTIONS.find(o => o.value === String(settings.target_duration_seconds))
+      ? String(settings.target_duration_seconds)
+      : ''
+  );
 
-    setLoading(true);
-    setError(null);
+  // Context data fields - flattened for easy form binding
+  const ctx = settings.context_data || {};
+  const [inspiration, setInspiration] = useState(ctx.production_notes?.inspiration || '');
+  const [references, setReferences] = useState(ctx.production_notes?.references || '');
+  const [characterDescription, setCharacterDescription] = useState(ctx.production_notes?.character_description || '');
+  const [castingVoice, setCastingVoice] = useState(ctx.production_notes?.casting_voice_talent || '');
+  const [styleReferences, setStyleReferences] = useState(ctx.character_design?.style_references || '');
+  const [animationStyle, setAnimationStyle] = useState(ctx.character_design?.animation_style || '');
+  const [designNotes, setDesignNotes] = useState(ctx.character_design?.notes || '');
+  const [narrationStyle, setNarrationStyle] = useState(ctx.atmosphere?.narration_style || '');
+  const [timingNotes, setTimingNotes] = useState(ctx.atmosphere?.timing_notes || '');
+  const [humorNotes, setHumorNotes] = useState(ctx.atmosphere?.humor_notes || '');
+  const [soundDesign, setSoundDesign] = useState(ctx.atmosphere?.sound_design || '');
+  const [colorPalette, setColorPalette] = useState(ctx.atmosphere?.color_palette || '');
+  const [fontPreference, setFontPreference] = useState(ctx.atmosphere?.font_preference || '');
 
-    const durationValue = targetDuration === 'custom' ? customDuration : targetDuration;
-
-    // Combine synopsis with creative direction for richer context
-    let fullDirection = '';
-    if (synopsis.trim()) fullDirection += `SYNOPSIS: ${synopsis.trim()}\n\n`;
-    if (direction.trim()) fullDirection += direction.trim();
-
-    try {
-      const res = await fetch('/api/generate-shots', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId,
-          script: script.trim(),
-          creativeDirection: fullDirection.trim() || undefined,
-          targetDuration: durationValue ? Number(durationValue) : undefined,
-        }),
-      });
-
-      let data;
-      try {
-        data = await res.json();
-      } catch {
-        const text = await res.text().catch(() => '');
-        setError(`Server returned ${res.status}. Response: ${text.substring(0, 200) || 'empty'}`);
-        return;
-      }
-
-      if (!res.ok) {
-        setError(data.error || `Server returned ${res.status}`);
-        return;
-      }
-
-      onShotsGenerated(data.shots);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(`Request failed: ${msg}`);
-    } finally {
-      setLoading(false);
+  // Sync from parent settings when they change
+  useEffect(() => {
+    setProjectMode(settings.project_mode);
+    const durVal = settings.target_duration_seconds
+      ? (DURATION_OPTIONS.find(o => o.value === String(settings.target_duration_seconds)) ? String(settings.target_duration_seconds) : 'custom')
+      : '';
+    setTargetDuration(durVal);
+    if (settings.target_duration_seconds && !DURATION_OPTIONS.find(o => o.value === String(settings.target_duration_seconds))) {
+      setCustomDuration(String(settings.target_duration_seconds));
     }
+    const c = settings.context_data || {};
+    setInspiration(c.production_notes?.inspiration || '');
+    setReferences(c.production_notes?.references || '');
+    setCharacterDescription(c.production_notes?.character_description || '');
+    setCastingVoice(c.production_notes?.casting_voice_talent || '');
+    setStyleReferences(c.character_design?.style_references || '');
+    setAnimationStyle(c.character_design?.animation_style || '');
+    setDesignNotes(c.character_design?.notes || '');
+    setNarrationStyle(c.atmosphere?.narration_style || '');
+    setTimingNotes(c.atmosphere?.timing_notes || '');
+    setHumorNotes(c.atmosphere?.humor_notes || '');
+    setSoundDesign(c.atmosphere?.sound_design || '');
+    setColorPalette(c.atmosphere?.color_palette || '');
+    setFontPreference(c.atmosphere?.font_preference || '');
+  }, [settings]);
+
+  // Refs for all fields so saveSettings always reads current values
+  const inspirationRef = useRef(inspiration);
+  const referencesRef = useRef(references);
+  const characterDescriptionRef = useRef(characterDescription);
+  const castingVoiceRef = useRef(castingVoice);
+  const styleReferencesRef = useRef(styleReferences);
+  const animationStyleRef = useRef(animationStyle);
+  const designNotesRef = useRef(designNotes);
+  const narrationStyleRef = useRef(narrationStyle);
+  const timingNotesRef = useRef(timingNotes);
+  const humorNotesRef = useRef(humorNotes);
+  const soundDesignRef = useRef(soundDesign);
+  const colorPaletteRef = useRef(colorPalette);
+  const fontPreferenceRef = useRef(fontPreference);
+  const targetDurationRef = useRef(targetDuration);
+  const customDurationRef = useRef(customDuration);
+  const projectModeRef = useRef(projectMode);
+
+  useEffect(() => { inspirationRef.current = inspiration; }, [inspiration]);
+  useEffect(() => { referencesRef.current = references; }, [references]);
+  useEffect(() => { characterDescriptionRef.current = characterDescription; }, [characterDescription]);
+  useEffect(() => { castingVoiceRef.current = castingVoice; }, [castingVoice]);
+  useEffect(() => { styleReferencesRef.current = styleReferences; }, [styleReferences]);
+  useEffect(() => { animationStyleRef.current = animationStyle; }, [animationStyle]);
+  useEffect(() => { designNotesRef.current = designNotes; }, [designNotes]);
+  useEffect(() => { narrationStyleRef.current = narrationStyle; }, [narrationStyle]);
+  useEffect(() => { timingNotesRef.current = timingNotes; }, [timingNotes]);
+  useEffect(() => { humorNotesRef.current = humorNotes; }, [humorNotes]);
+  useEffect(() => { soundDesignRef.current = soundDesign; }, [soundDesign]);
+  useEffect(() => { colorPaletteRef.current = colorPalette; }, [colorPalette]);
+  useEffect(() => { fontPreferenceRef.current = fontPreference; }, [fontPreference]);
+  useEffect(() => { targetDurationRef.current = targetDuration; }, [targetDuration]);
+  useEffect(() => { customDurationRef.current = customDuration; }, [customDuration]);
+  useEffect(() => { projectModeRef.current = projectMode; }, [projectMode]);
+
+  // Build context_data from current refs
+  function buildContextData(): ProjectContextData {
+    return {
+      production_notes: {
+        inspiration: inspirationRef.current.trim(),
+        references: referencesRef.current.trim(),
+        character_description: characterDescriptionRef.current.trim(),
+        casting_voice_talent: castingVoiceRef.current.trim(),
+      },
+      character_design: {
+        style_references: styleReferencesRef.current.trim(),
+        animation_style: animationStyleRef.current.trim(),
+        notes: designNotesRef.current.trim(),
+      },
+      atmosphere: {
+        narration_style: narrationStyleRef.current.trim(),
+        timing_notes: timingNotesRef.current.trim(),
+        humor_notes: humorNotesRef.current.trim(),
+        sound_design: soundDesignRef.current.trim(),
+        color_palette: colorPaletteRef.current.trim(),
+        font_preference: fontPreferenceRef.current.trim(),
+      },
+    };
   }
 
-  const wordCount = script.length > 0 ? script.split(/\s+/).filter(Boolean).length : 0;
+  // Build a synopsis string from the structured context for backward compatibility
+  function buildDescription(): string {
+    const parts: string[] = [];
+    if (characterDescriptionRef.current.trim()) parts.push(characterDescriptionRef.current.trim());
+    if (inspirationRef.current.trim()) parts.push(inspirationRef.current.trim());
+    return parts.join('\n\n');
+  }
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingTop: '24px' }}>
-      {/* Header - clickable to toggle collapse */}
+  // Build creative_direction from atmosphere fields for backward compatibility
+  function buildCreativeDirection(): string {
+    const parts: string[] = [];
+    if (narrationStyleRef.current.trim()) parts.push(`Narration: ${narrationStyleRef.current.trim()}`);
+    if (colorPaletteRef.current.trim()) parts.push(`Color Palette: ${colorPaletteRef.current.trim()}`);
+    if (soundDesignRef.current.trim()) parts.push(`Sound: ${soundDesignRef.current.trim()}`);
+    if (styleReferencesRef.current.trim()) parts.push(`Style: ${styleReferencesRef.current.trim()}`);
+    return parts.join('. ');
+  }
+
+  const saveSettings = useCallback(async (overrides?: Record<string, unknown>) => {
+    const dur = targetDurationRef.current === 'custom' ? customDurationRef.current : targetDurationRef.current;
+    const contextData = buildContextData();
+
+    const payload: Record<string, unknown> = {
+      projectId,
+      projectMode: projectModeRef.current,
+      targetDuration: dur ? Number(dur) : undefined,
+      description: buildDescription(),
+      creativeDirection: buildCreativeDirection(),
+      contextData,
+      ...overrides,
+    };
+
+    // Update parent state
+    const parentUpdate: Partial<ProjectSettings> = {
+      project_mode: (overrides?.projectMode as 'live_action' | 'animation') ?? projectModeRef.current,
+      target_duration_seconds: (overrides?.targetDuration !== undefined ? overrides.targetDuration : (dur ? Number(dur) : null)) as number | null,
+      description: buildDescription(),
+      creative_direction: buildCreativeDirection(),
+      context_data: contextData,
+    };
+    onSettingsChanged(parentUpdate);
+
+    try {
+      const res = await fetch('/api/save-project-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setError(null);
+        setTimeout(() => setSaved(false), 2000);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Failed to save');
+      }
+    } catch {
+      setError('Failed to save settings');
+    }
+  }, [projectId, onSettingsChanged]);
+
+  function handleModeChange(mode: 'live_action' | 'animation') {
+    setProjectMode(mode);
+    projectModeRef.current = mode;
+    saveSettings({ projectMode: mode });
+  }
+
+  function toggleSection(id: SectionId) {
+    setExpandedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  // Reusable textarea field
+  function ContextField({
+    label,
+    value,
+    setValue,
+    setRef,
+    placeholder,
+    rows = 2,
+  }: {
+    label: string;
+    value: string;
+    setValue: (v: string) => void;
+    setRef: React.MutableRefObject<string>;
+    placeholder: string;
+    rows?: number;
+  }) {
+    return (
+      <div style={{ marginBottom: '12px' }}>
+        <label style={{
+          display: 'block', fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
+          letterSpacing: '0.1em', textTransform: 'uppercase', color: C.text3, marginBottom: '6px',
+        }}>
+          {label}
+        </label>
+        <textarea
+          value={value}
+          onChange={(e) => { setValue(e.target.value); setRef.current = e.target.value; }}
+          onBlur={() => saveSettings()}
+          placeholder={placeholder}
+          rows={rows}
+          style={{
+            width: '100%', padding: '12px 14px',
+            background: C.surface, borderWidth: '1px', borderStyle: 'solid', borderColor: C.border,
+            color: '#fff', fontSize: '13px', fontFamily: 'Raleway, sans-serif', lineHeight: '1.6',
+            resize: 'vertical', outline: 'none', transition: 'border-color 0.3s ease',
+          }}
+          onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,45,123,0.4)')}
+          onBlurCapture={e => (e.currentTarget.style.borderColor = C.border)}
+        />
+      </div>
+    );
+  }
+
+  // Section accordion header
+  function SectionHeader({ id, title, subtitle, icon }: { id: SectionId; title: string; subtitle: string; icon: React.ReactNode }) {
+    const isOpen = expandedSections.has(id);
+    return (
       <button
-        onClick={() => setContextCollapsed(prev => !prev)}
+        onClick={() => toggleSection(id)}
         style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          marginBottom: contextCollapsed ? '8px' : '16px', flexShrink: 0,
-          width: '100%', background: 'none', border: 'none', cursor: 'pointer',
-          padding: '6px 0',
+          width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
+          padding: '16px 20px',
+          background: isOpen ? 'rgba(255,45,123,0.04)' : C.surface,
+          border: `1px solid ${isOpen ? 'rgba(255,45,123,0.15)' : C.border}`,
+          borderBottom: isOpen ? 'none' : `1px solid ${C.border}`,
+          cursor: 'pointer', transition: 'all 0.2s',
+          marginTop: '8px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <svg
-            width="12" height="12" viewBox="0 0 24 24" fill="none"
-            stroke={C.text3} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            style={{
-              transition: 'transform 0.25s ease',
-              transform: contextCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
-            }}
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-          <h2 style={{
-            fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
-            letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', margin: 0,
+        <span style={{ color: isOpen ? C.accent : C.text3, flexShrink: 0 }}>{icon}</span>
+        <div style={{ flex: 1, textAlign: 'left' }}>
+          <span style={{
+            display: 'block', fontSize: '11px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
+            letterSpacing: '0.1em', textTransform: 'uppercase',
+            color: isOpen ? '#fff' : C.text2,
           }}>
-            Project Context
-          </h2>
-          {contextCollapsed && synopsis.trim() && (
+            {title}
+          </span>
+          <span style={{
+            display: 'block', fontSize: '10px', fontFamily: 'Raleway, sans-serif',
+            color: C.text3, marginTop: '2px',
+          }}>
+            {subtitle}
+          </span>
+        </div>
+        <svg
+          width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isOpen ? C.accent : C.text3}
+          strokeWidth="2" strokeLinecap="round"
+          style={{ transition: 'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingTop: '16px' }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: '16px', flexShrink: 0,
+      }}>
+        <h2 style={{
+          fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
+          letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', margin: 0,
+        }}>
+          Project Context
+        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {saved && (
             <span style={{
-              fontSize: '9px', fontFamily: 'Raleway, sans-serif', color: C.text3,
-              maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 600,
+              color: 'rgba(45,200,120,0.8)', letterSpacing: '0.08em', textTransform: 'uppercase',
             }}>
-              {synopsis.slice(0, 40)}{synopsis.length > 40 ? '...' : ''}
+              Saved
+            </span>
+          )}
+          {error && (
+            <span style={{
+              fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 600,
+              color: '#ff264a', letterSpacing: '0.08em',
+            }}>
+              {error}
             </span>
           )}
         </div>
-        {wordCount > 0 && (
-          <span style={{ fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: C.accent }}>
-            {wordCount} words in script
-          </span>
-        )}
-      </button>
+      </div>
 
-      {/* Collapsible context fields */}
+      {/* Guidance note */}
       <div style={{
-        overflow: 'hidden',
-        maxHeight: contextCollapsed ? '0px' : '2000px',
-        opacity: contextCollapsed ? 0 : 1,
-        transition: 'max-height 0.35s ease, opacity 0.25s ease',
-        display: 'flex', flexDirection: 'column', flex: contextCollapsed ? '0 0 auto' : '1 1 0',
-        minHeight: contextCollapsed ? 0 : undefined,
+        marginBottom: '16px', padding: '12px 14px',
+        background: 'rgba(255,45,123,0.04)',
+        borderLeft: '3px solid rgba(255,45,123,0.3)',
       }}>
-        {/* Synopsis context box */}
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <label style={{
-              fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
-              letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text2,
-            }}>
-              Synopsis
-            </label>
-            {/* Reset icon */}
-            {synopsis.trim() && (
-              <button
-                onClick={() => setSynopsis('')}
-                title="Clear synopsis"
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: '20px', height: '20px',
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: C.text3, transition: 'color 0.2s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#ff264a')}
-                onMouseLeave={e => (e.currentTarget.style.color = C.text3)}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                  <path d="M3 3v5h5" />
-                </svg>
-              </button>
-            )}
-          </div>
-          <div style={{ marginBottom: '6px', paddingLeft: '10px', borderLeft: `2px solid rgba(255,45,123,0.2)` }}>
-            <p style={{ fontSize: '10px', fontFamily: 'Raleway, sans-serif', color: 'rgba(255,255,255,0.3)', lineHeight: '1.5', margin: 0 }}>
-              Story overview, character descriptions, setting, mood, tone. Helps the AI understand context without changing your script.
-            </p>
-          </div>
-          <textarea
-            value={synopsis}
-            onChange={(e) => setSynopsis(e.target.value)}
-            placeholder="e.g. A tense thriller set in a neon-lit Tokyo nightclub. Main character Yuki (30s, Japanese woman, sharp features) is a detective undercover as a bartender. The atmosphere is smoky, dangerous, with bass-heavy music..."
-            style={{
-              width: '100%', flex: 1, minHeight: '120px', padding: '14px',
-              background: C.surface, borderWidth: '1px', borderStyle: 'solid', borderColor: C.border,
-              color: '#fff', fontSize: '13px', fontFamily: 'Raleway, sans-serif', lineHeight: '1.7',
-              resize: 'none', outline: 'none', transition: 'border-color 0.3s ease',
-            }}
-            onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,45,123,0.4)')}
-            onBlur={e => (e.currentTarget.style.borderColor = C.border)}
-          />
-        </div>
+        <p style={{
+          fontSize: '11px', fontFamily: 'Raleway, sans-serif', color: C.text2,
+          lineHeight: '1.6', margin: 0,
+        }}>
+          Fill in your project context below. This information exports directly to your storyboard
+          PPTX as the first 3 slides (Production Notes, Character Design, Atmosphere).
+          Write your script in the Script tab, then hit Generate Storyboard.
+        </p>
+      </div>
 
-        {/* Creative Direction */}
-        <div style={{ flexShrink: 0, marginBottom: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <label style={{
-              fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
-              letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text2,
-            }}>
-              Creative Direction <span style={{ color: C.text3, fontWeight: 500 }}>(optional)</span>
-            </label>
-            {direction.trim() && (
+      {/* Production Mode + Duration row */}
+      <div style={{ display: 'flex', gap: '16px', marginBottom: '12px', flexShrink: 0 }}>
+        {/* Production Mode */}
+        <div style={{ flex: 1 }}>
+          <label style={{
+            display: 'block', fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
+            letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text2, marginBottom: '8px',
+          }}>
+            Production Mode
+          </label>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            {(['live_action', 'animation'] as const).map(mode => (
               <button
-                onClick={() => setDirection('')}
-                title="Clear direction"
+                key={mode}
+                onClick={() => handleModeChange(mode)}
                 style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: '20px', height: '20px',
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: C.text3, transition: 'color 0.2s',
+                  flex: 1, padding: '10px 16px',
+                  fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
+                  letterSpacing: '0.08em', textTransform: 'uppercase',
+                  background: projectMode === mode ? 'rgba(255,45,123,0.12)' : C.surface,
+                  color: projectMode === mode ? C.accent : C.text3,
+                  border: `1px solid ${projectMode === mode ? 'rgba(255,45,123,0.3)' : C.border}`,
+                  cursor: 'pointer', transition: 'all 0.2s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#ff264a')}
-                onMouseLeave={e => (e.currentTarget.style.color = C.text3)}
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                  <path d="M3 3v5h5" />
-                </svg>
+                {mode === 'live_action' ? 'Live Action' : 'Animation'}
               </button>
-            )}
+            ))}
           </div>
-          <textarea
-            value={direction}
-            onChange={(e) => setDirection(e.target.value)}
-            placeholder="e.g. Blade Runner 2049 look, moody neon lighting, desaturated teal/orange grade, anamorphic lens flares..."
-            rows={2}
-            style={{
-              width: '100%', padding: '14px',
-              background: C.surface, borderWidth: '1px', borderStyle: 'solid', borderColor: C.border,
-              color: '#fff', fontSize: '13px', fontFamily: 'Raleway, sans-serif',
-              resize: 'vertical', outline: 'none', transition: 'border-color 0.3s ease',
-            }}
-            onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,45,123,0.4)')}
-            onBlur={e => (e.currentTarget.style.borderColor = C.border)}
-          />
         </div>
 
         {/* Target Duration */}
-        <div style={{ flexShrink: 0, marginBottom: '12px' }}>
+        <div style={{ flex: 1 }}>
           <label style={{
             display: 'block', fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
-            letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text2, marginBottom: '6px',
+            letterSpacing: '0.12em', textTransform: 'uppercase', color: C.text2, marginBottom: '8px',
           }}>
             Target Duration
           </label>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             <select
               value={targetDuration}
-              onChange={(e) => setTargetDuration(e.target.value)}
+              onChange={(e) => {
+                setTargetDuration(e.target.value);
+                targetDurationRef.current = e.target.value;
+                if (e.target.value !== 'custom') {
+                  saveSettings({ targetDuration: e.target.value ? Number(e.target.value) : undefined });
+                }
+              }}
               style={{
-                flex: 1, padding: '10px 12px', fontSize: '13px', fontFamily: 'Raleway, sans-serif',
+                flex: 1, padding: '10px 12px', fontSize: '12px', fontFamily: 'Raleway, sans-serif',
                 background: '#1a1a1a', color: '#fff', border: `1px solid ${C.border}`,
                 borderRadius: 0, cursor: 'pointer', outline: 'none',
               }}
@@ -281,83 +452,246 @@ export default function ScriptPanel({
               ))}
             </select>
             {targetDuration === 'custom' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <input
                   type="number"
                   value={customDuration}
-                  onChange={(e) => setCustomDuration(e.target.value)}
+                  onChange={(e) => { setCustomDuration(e.target.value); customDurationRef.current = e.target.value; }}
+                  onBlur={() => saveSettings()}
                   placeholder="120"
                   min="10"
                   max="3600"
                   style={{
-                    width: '80px', padding: '10px 12px', fontSize: '13px', fontFamily: 'Raleway, sans-serif',
+                    width: '70px', padding: '10px 8px', fontSize: '12px', fontFamily: 'Raleway, sans-serif',
                     background: '#1a1a1a', color: '#fff', border: `1px solid ${C.border}`,
                     borderRadius: 0, outline: 'none', textAlign: 'center',
                   }}
                 />
-                <span style={{ fontSize: '11px', fontFamily: 'Raleway, sans-serif', color: C.text3, whiteSpace: 'nowrap' }}>
-                  sec
-                </span>
+                <span style={{ fontSize: '10px', fontFamily: 'Raleway, sans-serif', color: C.text3 }}>sec</span>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {error && (
-        <div style={{
-          flexShrink: 0, marginBottom: '12px', padding: '12px 16px',
-          background: error.startsWith('Saved') ? 'rgba(45,200,120,0.08)' : 'rgba(255,38,74,0.08)',
-          borderWidth: '1px', borderStyle: 'solid',
-          borderColor: error.startsWith('Saved') ? 'rgba(45,200,120,0.2)' : 'rgba(255,38,74,0.2)',
-          color: error.startsWith('Saved') ? 'rgba(45,200,120,0.8)' : '#ff264a',
-          fontSize: '13px', fontFamily: 'Raleway, sans-serif',
-        }}>
-          {error}
-        </div>
-      )}
+      {/* Scrollable section area */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: '80px' }}>
 
-      {/* Generate button */}
-      <div style={{ flexShrink: 0, paddingBottom: '24px' }}>
+        {/* ═══ SECTION 1: PRODUCTION NOTES ═══ */}
+        <SectionHeader
+          id="production"
+          title="Production Notes"
+          subtitle="Inspiration, references, character descriptions, casting"
+          icon={
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+            </svg>
+          }
+        />
+        {expandedSections.has('production') && (
+          <div style={{
+            padding: '20px',
+            border: `1px solid rgba(255,45,123,0.15)`,
+            borderTop: 'none',
+            background: 'rgba(255,255,255,0.01)',
+          }}>
+            <ContextField
+              label="Inspiration / Concept"
+              value={inspiration}
+              setValue={setInspiration}
+              setRef={inspirationRef}
+              placeholder="What inspired this project? Key concept or theme. e.g., 'Inspired by Apple product launches, clean and minimal with emotional storytelling.'"
+              rows={2}
+            />
+            <ContextField
+              label="References"
+              value={references}
+              setValue={setReferences}
+              setRef={referencesRef}
+              placeholder="Reference films, videos, commercials, or visual styles. e.g., 'Blade Runner 2049 color grading, Her (2013) intimate framing.'"
+              rows={2}
+            />
+            <ContextField
+              label="Character Descriptions"
+              value={characterDescription}
+              setValue={setCharacterDescription}
+              setRef={characterDescriptionRef}
+              placeholder="Describe each character: appearance, personality, wardrobe, distinguishing features. e.g., 'Dr. Sarah Chen, 40s, silver-streaked hair pulled back, lab coat over black turtleneck.'"
+              rows={4}
+            />
+            <ContextField
+              label="Casting / Voice Talent"
+              value={castingVoice}
+              setValue={setCastingVoice}
+              setRef={castingVoiceRef}
+              placeholder="Voice talent notes, casting direction, accent preferences. e.g., 'Narrator: warm male voice, mid-30s, slight British accent. Think David Attenborough but younger.'"
+              rows={2}
+            />
+          </div>
+        )}
+
+        {/* ═══ SECTION 2: CHARACTER DESIGN ═══ */}
+        <SectionHeader
+          id="character"
+          title="Character Design"
+          subtitle="Visual style, animation approach, design references"
+          icon={
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          }
+        />
+        {expandedSections.has('character') && (
+          <div style={{
+            padding: '20px',
+            border: `1px solid rgba(255,45,123,0.15)`,
+            borderTop: 'none',
+            background: 'rgba(255,255,255,0.01)',
+          }}>
+            <ContextField
+              label="Style References"
+              value={styleReferences}
+              setValue={setStyleReferences}
+              setRef={styleReferencesRef}
+              placeholder="Visual style for characters. e.g., '3D rendered corporate figures, clean edges, subtle shadows, Pixar-adjacent but more professional.'"
+              rows={3}
+            />
+            <ContextField
+              label="Animation Style"
+              value={animationStyle}
+              setValue={setAnimationStyle}
+              setRef={animationStyleRef}
+              placeholder="How characters move and express. e.g., 'Smooth motion graphics style transitions, characters appear as clean vector illustrations with minimal animation.'"
+              rows={2}
+            />
+            <ContextField
+              label="Design Notes"
+              value={designNotes}
+              setValue={setDesignNotes}
+              setRef={designNotesRef}
+              placeholder="Additional design constraints or notes. e.g., 'All characters use the same simplified face style. No photorealistic features. Brand colors only for wardrobe.'"
+              rows={2}
+            />
+            <p style={{ fontSize: '10px', fontFamily: 'Raleway, sans-serif', color: C.text3, lineHeight: '1.5', marginTop: '4px' }}>
+              Upload character reference images in the Library tab. Talent linked there will be available for shot assignment.
+            </p>
+          </div>
+        )}
+
+        {/* ═══ SECTION 3: ATMOSPHERE / TONE / DIRECTION ═══ */}
+        <SectionHeader
+          id="atmosphere"
+          title="Atmosphere / Tone / Direction"
+          subtitle="Narration, timing, sound design, color palette, typography"
+          icon={
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+              <line x1="9" y1="9" x2="9.01" y2="9" />
+              <line x1="15" y1="9" x2="15.01" y2="9" />
+            </svg>
+          }
+        />
+        {expandedSections.has('atmosphere') && (
+          <div style={{
+            padding: '20px',
+            border: `1px solid rgba(255,45,123,0.15)`,
+            borderTop: 'none',
+            background: 'rgba(255,255,255,0.01)',
+          }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+              <ContextField
+                label="Narration Style"
+                value={narrationStyle}
+                setValue={setNarrationStyle}
+                setRef={narrationStyleRef}
+                placeholder="e.g., 'Conversational, warm, educational but not condescending.'"
+                rows={2}
+              />
+              <ContextField
+                label="Timing / Pacing"
+                value={timingNotes}
+                setValue={setTimingNotes}
+                setRef={timingNotesRef}
+                placeholder="e.g., 'Moderate pace, 3-5 second pauses between sections. Build energy toward conclusion.'"
+                rows={2}
+              />
+              <ContextField
+                label="Humor / Tone"
+                value={humorNotes}
+                setValue={setHumorNotes}
+                setRef={humorNotesRef}
+                placeholder="e.g., 'Light humor, occasional visual gags. Never sarcastic.'"
+                rows={2}
+              />
+              <ContextField
+                label="Sound Design"
+                value={soundDesign}
+                setValue={setSoundDesign}
+                setRef={soundDesignRef}
+                placeholder="e.g., 'Ambient electronic underscore, whoosh transitions, subtle UI sounds on text reveals.'"
+                rows={2}
+              />
+              <ContextField
+                label="Color Palette"
+                value={colorPalette}
+                setValue={setColorPalette}
+                setRef={colorPaletteRef}
+                placeholder="e.g., 'Navy #1B2A4A, Coral #E63946, White #FFFFFF. Dark backgrounds, bright accent highlights.'"
+                rows={2}
+              />
+              <ContextField
+                label="Typography / Font"
+                value={fontPreference}
+                setValue={setFontPreference}
+                setRef={fontPreferenceRef}
+                placeholder="e.g., 'Montserrat Bold for titles, Raleway for body. All caps headers.'"
+                rows={2}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Fixed save button at bottom */}
+      <div style={{
+        position: 'sticky', bottom: 0, flexShrink: 0,
+        paddingTop: '12px', paddingBottom: '16px',
+        background: 'linear-gradient(to top, #0a0a0a 80%, transparent)',
+      }}>
         <button
-          onClick={handleGenerate}
-          disabled={loading || !script.trim()}
+          onClick={() => saveSettings()}
           style={{
-            height: '48px', width: '100%',
+            height: '42px', width: '100%',
             fontSize: '11px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700,
             letterSpacing: '0.12em', textTransform: 'uppercase',
-            background: loading || !script.trim() ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #ff264a, #ff2d7b)',
-            color: loading || !script.trim() ? 'rgba(255,255,255,0.2)' : '#fff',
-            border: 'none',
-            cursor: loading || !script.trim() ? 'not-allowed' : 'pointer',
+            background: C.surface,
+            color: C.text2,
+            border: `1px solid ${C.border}`,
+            cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-            transition: 'opacity 0.3s ease',
+            transition: 'all 0.2s',
           }}
-          onMouseEnter={e => { if (!loading && script.trim()) e.currentTarget.style.opacity = '0.85'; }}
-          onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+          onMouseEnter={e => {
+            e.currentTarget.style.borderColor = 'rgba(255,45,123,0.3)';
+            e.currentTarget.style.color = '#fff';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = C.border;
+            e.currentTarget.style.color = C.text2;
+          }}
         >
-          {loading ? (
-            <>
-              <svg style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.3" />
-                <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-              Generating Storyboard...
-            </>
-          ) : (
-            <>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-              </svg>
-              {script.trim() ? 'Generate Storyboard' : 'Write Script First'}
-            </>
-          )}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+            <polyline points="17 21 17 13 7 13 7 21" />
+            <polyline points="7 3 7 8 15 8" />
+          </svg>
+          Save Context
         </button>
-        {!script.trim() && (
-          <p style={{ fontSize: '10px', fontFamily: 'Raleway, sans-serif', color: C.text3, textAlign: 'center', marginTop: '8px' }}>
-            Open the Script tab to write or paste your script
-          </p>
-        )}
       </div>
     </div>
   );

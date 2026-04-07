@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import type { Shot } from '@/lib/types/database';
+import type { Shot, CameraMovement, MotionIntensity } from '@/lib/types/database';
 import ImageLightbox from './ImageLightbox';
 import VoicePicker from './VoicePicker';
 import TalentSelector, { type TalentAsset } from './TalentSelector';
@@ -24,8 +24,8 @@ const C = {
   border: 'rgba(255,255,255,0.08)',
   borderHover: 'rgba(255,255,255,0.12)',
   text: '#fff',
-  text2: 'rgba(255,255,255,0.6)',
-  text3: 'rgba(255,255,255,0.3)',
+  text2: 'rgba(255,255,255,0.75)',
+  text3: 'rgba(255,255,255,0.5)',
   accent: '#ff2d7b',
   accentBg: 'rgba(255,45,123,0.12)',
   danger: '#ff264a',
@@ -127,6 +127,11 @@ export default function ShotCard({
   onShotUpdated,
   onDeleteShot,
   onResetShot,
+  onToggleDone,
+  isDone = false,
+  hideCheckbox = false,
+  compact = false,
+  showVideo = false,
 }: {
   shot: Shot;
   index: number;
@@ -135,6 +140,11 @@ export default function ShotCard({
   onShotUpdated?: (shot: Shot) => void;
   onDeleteShot?: (shotId: string) => void;
   onResetShot?: (shotId: string) => void;
+  onToggleDone?: (shotId: string) => void;
+  isDone?: boolean;
+  hideCheckbox?: boolean;
+  compact?: boolean;
+  showVideo?: boolean;
 }) {
   const [shot, setShot] = useState(initialShot);
   const [generating, setGenerating] = useState<GeneratingState>('idle');
@@ -512,7 +522,7 @@ export default function ShotCard({
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.text2, marginBottom: '6px' }}>Classification</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {(['talent', 'background', 'product', 'audio', 'lut', 'other'] as const).map((t) => (
+                {(['talent', 'background', 'product', 'audio'] as const).map((t) => (
                   <button
                     key={t}
                     onClick={() => setSaveAssetType(t)}
@@ -563,12 +573,14 @@ export default function ShotCard({
       )}
 
       <div style={{
-        background: C.card, border: `1px solid ${C.border}`,
+        background: C.card,
+        border: `1px solid ${index % 2 === 0 ? '#ffffff' : '#00e5ff'}`,
         transition: 'border-color 0.3s', overflow: 'hidden',
+        opacity: isDone ? 0.6 : 1,
       }}>
         {/* === CARD HEADER: Always visible === */}
         <div style={{ padding: '20px 24px' }}>
-          {/* Top row: shot number + actions */}
+          {/* Top row: shot number + checkbox + actions */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span style={{
@@ -590,11 +602,30 @@ export default function ShotCard({
               )}
               {shot.image_url && <span style={{ fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 600, padding: '3px 10px', background: C.accentBg, color: C.accent }}>IMG</span>}
               {shot.video_url && <span style={{ fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 600, padding: '3px 10px', background: C.accentBg, color: C.accent }}>VID</span>}
-              {avatarCandidate && <span style={{ fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 600, padding: '3px 10px', background: C.dangerBg, color: C.danger }}>Avatar</span>}
             </div>
 
-            {/* Actions: reset + delete */}
+            {/* Actions: done checkbox + reset + delete */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {/* Done checkbox (hidden when compact view already shows one) */}
+              {!hideCheckbox && (
+                <button
+                  onClick={() => onToggleDone?.(shot.id)}
+                  title={isDone ? 'Mark as not done' : 'Mark as done'}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: '24px', height: '24px',
+                    background: isDone ? 'rgba(0,255,100,0.12)' : 'transparent',
+                    border: `2px solid ${isDone ? '#00ff64' : 'rgba(255,255,255,0.2)'}`,
+                    cursor: 'pointer', transition: 'all 0.2s',
+                  }}
+                >
+                  {isDone && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00ff64" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </button>
+              )}
               <button
                 onClick={() => onResetShot?.(shot.id)}
                 title="Reset shot (clear generated media)"
@@ -715,7 +746,6 @@ export default function ShotCard({
           {/* Talent selector row */}
           <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <TalentSelector projectId={projectId} selectedTalentIds={selectedTalents.map(t => t.id)} onSelectMulti={setSelectedTalents} compact />
-            <VoicePicker selectedVoiceId={selectedVoiceId} onSelect={setSelectedVoiceId} compact />
           </div>
         </div>
 
@@ -763,55 +793,69 @@ export default function ShotCard({
           </div>
         )}
 
-        {/* VIDEO GENERATION */}
-        <AccordionHeader
-          title="Video Generation"
-          isOpen={openSection === 'video'}
-          onClick={() => toggleSection('video')}
-          badge={shot.video_url ? 'Generated' : shot.veo_prompt ? 'Ready' : 'No Prompt'}
-          hasContent={!!shot.video_url}
-        />
-        {openSection === 'video' && (
-          <div style={{ padding: '20px 24px', borderTop: `1px solid ${C.border}` }}>
-            {/* Video preview */}
-            {(shot.video_url || videoVariations.length > 0) && (
-              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
-                {shot.video_url && <MediaPreview src={shot.video_url} type="video" label="Video" mediaField="video_url" />}
-                {videoVariations.filter(v => v && !v.startsWith('error:')).map((v, i) => (
-                  <MediaPreview key={i} src={v} type="video" label={`Variation ${i + 1}`} />
-                ))}
-              </div>
-            )}
-
-            {shot.veo_prompt && (
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.text2 }}>Veo Prompt</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                      <span style={{ fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: C.text3 }}>4 angles</span>
-                      <div
-                        onClick={(e) => { e.preventDefault(); setVariationsEnabled(!variationsEnabled); }}
-                        style={{
-                          width: '32px', height: '18px', borderRadius: '9px',
-                          transition: 'background 0.2s', position: 'relative', cursor: 'pointer',
-                          background: variationsEnabled ? C.accent : C.borderHover,
-                        }}
-                      >
-                        <div style={{
-                          width: '14px', height: '14px', borderRadius: '7px', background: '#fff',
-                          position: 'absolute', top: '2px', transition: 'transform 0.2s',
-                          transform: variationsEnabled ? 'translateX(14px)' : 'translateX(2px)',
-                        }} />
-                      </div>
-                    </label>
-                    <GenButton onClick={handleGenerateVideo} loading={generating === 'video'} loadingText="Generating..." text={variationsEnabled ? 'Generate 4 Videos' : 'Generate Video'} generating={generating} />
+        {/* VIDEO GENERATION (only visible when Video toggle is ON in ShotList toolbar) */}
+        {showVideo && (
+          <>
+            <AccordionHeader
+              title="Video Generation"
+              isOpen={openSection === 'video'}
+              onClick={() => toggleSection('video')}
+              badge={shot.video_url ? 'Generated' : shot.veo_prompt ? 'Ready' : 'No Prompt'}
+              hasContent={!!shot.video_url}
+            />
+            {openSection === 'video' && (
+              <div style={{ padding: '20px 24px', borderTop: `1px solid ${C.border}` }}>
+                {/* Video preview */}
+                {(shot.video_url || videoVariations.length > 0) && (
+                  <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
+                    {shot.video_url && <MediaPreview src={shot.video_url} type="video" label="Video" mediaField="video_url" />}
+                    {videoVariations.filter(v => v && !v.startsWith('error:')).map((v, i) => (
+                      <MediaPreview key={i} src={v} type="video" label={`Variation ${i + 1}`} />
+                    ))}
                   </div>
-                </div>
-                <EditableTextArea field="veo_prompt" value={shot.veo_prompt} rows={4} />
+                )}
+
+                {shot.veo_prompt && (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.text2 }}>Veo Prompt</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                          <span style={{ fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: C.text3 }}>4 angles</span>
+                          <div
+                            onClick={(e) => { e.preventDefault(); setVariationsEnabled(!variationsEnabled); }}
+                            style={{
+                              width: '32px', height: '18px', borderRadius: '9px',
+                              transition: 'background 0.2s', position: 'relative', cursor: 'pointer',
+                              background: variationsEnabled ? C.accent : C.borderHover,
+                            }}
+                          >
+                            <div style={{
+                              width: '14px', height: '14px', borderRadius: '7px', background: '#fff',
+                              position: 'absolute', top: '2px', transition: 'transform 0.2s',
+                              transform: variationsEnabled ? 'translateX(14px)' : 'translateX(2px)',
+                            }} />
+                          </div>
+                        </label>
+                        <GenButton onClick={handleGenerateVideo} loading={generating === 'video'} loadingText="Generating..." text={variationsEnabled ? 'Generate 4 Videos' : 'Generate Video'} generating={generating} />
+                      </div>
+                    </div>
+                    <EditableTextArea field="veo_prompt" value={shot.veo_prompt} rows={4} />
+                  </div>
+                )}
+
+                {/* Generate Avatar (moved here from Voice & Audio) */}
+                {avatarCandidate && (
+                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: `1px solid ${C.border}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.text2 }}>Avatar</span>
+                      <GenButton onClick={handleGenerateAvatar} loading={generating === 'avatar'} loadingText="Generating..." text="Generate Avatar" generating={generating} />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-          </div>
+          </>
         )}
 
         {/* VOICE & AUDIO */}
@@ -828,13 +872,19 @@ export default function ShotCard({
         />
         {openSection === 'voice' && (
           <div style={{ padding: '20px 24px', borderTop: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Voice Selection */}
+            <div>
+              <span style={{ display: 'block', fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.text2, marginBottom: '8px' }}>
+                Voice
+              </span>
+              <VoicePicker selectedVoiceId={selectedVoiceId} onSelect={setSelectedVoiceId} compact />
+            </div>
             {/* Dialogue */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span style={{ fontSize: '10px', fontFamily: 'Montserrat, sans-serif', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.text2 }}>Dialogue</span>
                 {hasDialogue && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {avatarCandidate && <GenButton onClick={handleGenerateAvatar} loading={generating === 'avatar'} loadingText="Generating..." text="Generate Avatar" generating={generating} />}
                     <GenButton onClick={() => handleGenerateVoice('dialogue')} loading={generating === 'voice_dialogue'} loadingText="Generating..." text="Generate Voice" forceDisabled={!voiceConfigured} disabledText="Voice Not Configured" generating={generating} />
                   </div>
                 )}
@@ -859,9 +909,9 @@ export default function ShotCard({
           </div>
         )}
 
-        {/* CINEMATOGRAPHY (quick select placeholder for now) */}
+        {/* CINEMATIC CONTROLS */}
         <AccordionHeader
-          title="Cinematography"
+          title="Cinematic Controls"
           isOpen={openSection === 'cinematography'}
           onClick={() => toggleSection('cinematography')}
           badge="Quick Select"
@@ -870,17 +920,59 @@ export default function ShotCard({
           <div style={{ borderTop: `1px solid ${C.border}` }}>
             <ShotCineQuickSelect
               shotId={shot.id}
-              onSelectionsChanged={(selections, cameraMovement, motionIntensity) => {
-                // Store cinematography selections in shot metadata for downstream use
-                updateShot({
-                  metadata: {
-                    ...meta,
-                    cine_selections: selections,
-                    cine_camera_movement: cameraMovement,
-                    cine_motion_intensity: motionIntensity,
-                  },
+              initialSelections={(meta.cine_selections as Record<string, string | null>) || null}
+              initialCameraMovement={(meta.cine_camera_movement as CameraMovement) || null}
+              initialMotionIntensity={(meta.cine_motion_intensity as MotionIntensity) || null}
+              onSelectionsChanged={async (selections, cameraMovement, motionIntensity) => {
+                // Store cinematography selections in shot metadata AND persist to DB
+                const updatedMeta = {
+                  ...meta,
+                  cine_selections: selections,
+                  cine_camera_movement: cameraMovement,
+                  cine_motion_intensity: motionIntensity,
+                };
+
+                // Build the focal_length display value from the selection name
+                // We look up the option name from selections.focal_length
+                let focalLengthName: string | undefined;
+                if (selections.focal_length) {
+                  // The option ID is stored; we will persist it in metadata
+                  // and set focal_length to the option name for display
+                  focalLengthName = selections.focal_length;
+                }
+
+                // Update local state with all relevant fields
+                const shotUpdate: Partial<Shot> = {
+                  metadata: updatedMeta,
                   camera_movement: cameraMovement,
-                });
+                };
+                if (focalLengthName) {
+                  shotUpdate.focal_length = focalLengthName;
+                }
+                updateShot(shotUpdate);
+
+                // Persist all changes to database
+                const updates: { field: string; value: unknown }[] = [
+                  { field: 'camera_movement', value: cameraMovement },
+                  { field: 'metadata', value: updatedMeta },
+                ];
+                if (focalLengthName) {
+                  updates.push({ field: 'focal_length', value: focalLengthName });
+                }
+
+                try {
+                  await Promise.all(
+                    updates.map(({ field, value }) =>
+                      fetch('/api/update-shot', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ shotId: shot.id, field, value }),
+                      })
+                    )
+                  );
+                } catch {
+                  // Silent; local state is already updated
+                }
               }}
             />
           </div>

@@ -35,7 +35,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     .order('sort_order', { ascending: true });
 
   return (
-    <div className="min-h-screen" style={{ background: '#0a0a0a' }}>
+    <div style={{ background: '#0a0a0a', minHeight: '100vh', height: '100%' }}>
       {/* Top Bar */}
       <header
         className="workspace-header-pad"

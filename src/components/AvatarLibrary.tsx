@@ -91,7 +91,7 @@ function CreateCharacterModal({ onSubmit, onClose, isLoading }: CreateCharacterF
     display: 'block' as const,
     fontSize: '11px',
     fontWeight: 700,
-    color: 'rgba(255,255,255,0.3)',
+    color: 'rgba(255,255,255,0.5)',
     marginBottom: '8px',
     fontFamily: 'Montserrat',
     textTransform: 'uppercase' as const,
@@ -283,7 +283,7 @@ function CreateCharacterModal({ onSubmit, onClose, isLoading }: CreateCharacterF
                 fontWeight: 700,
                 background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.08)',
-                color: 'rgba(255,255,255,0.6)',
+                color: 'rgba(255,255,255,0.75)',
                 cursor: 'pointer',
                 opacity: isLoading ? 0.5 : 1,
               }}
@@ -566,7 +566,7 @@ export default function AvatarLibrary({ projectId, onCharactersChanged }: Avatar
               <p style={{
                 fontSize: '12px',
                 lineHeight: 1.6,
-                color: 'rgba(255,255,255,0.6)',
+                color: 'rgba(255,255,255,0.75)',
                 fontFamily: 'Raleway',
                 margin: 0,
               }}>{avatar.description}</p>
@@ -580,7 +580,7 @@ export default function AvatarLibrary({ projectId, onCharactersChanged }: Avatar
                 fontWeight: 700,
                 textTransform: 'uppercase',
                 letterSpacing: '0.12em',
-                color: 'rgba(255,255,255,0.3)',
+                color: 'rgba(255,255,255,0.5)',
                 fontFamily: 'Montserrat',
                 display: 'block',
                 marginBottom: '6px',
@@ -603,7 +603,7 @@ export default function AvatarLibrary({ projectId, onCharactersChanged }: Avatar
                   padding: '4px 8px',
                   background: 'rgba(255,255,255,0.04)',
                   border: '1px solid rgba(255,255,255,0.08)',
-                  color: 'rgba(255,255,255,0.6)',
+                  color: 'rgba(255,255,255,0.75)',
                   fontFamily: 'Raleway',
                 }}>
                   {tag}
@@ -620,7 +620,7 @@ export default function AvatarLibrary({ projectId, onCharactersChanged }: Avatar
                 fontWeight: 700,
                 textTransform: 'uppercase',
                 letterSpacing: '0.12em',
-                color: 'rgba(255,255,255,0.3)',
+                color: 'rgba(255,255,255,0.5)',
                 fontFamily: 'Montserrat',
                 display: 'block',
                 marginBottom: '8px',
@@ -655,7 +655,7 @@ export default function AvatarLibrary({ projectId, onCharactersChanged }: Avatar
               fontSize: '13px',
               fontWeight: 700,
               background: inProject ? 'rgba(255,255,255,0.04)' : 'linear-gradient(135deg, #ff264a, #ff2d7b)',
-              color: inProject ? 'rgba(255,255,255,0.3)' : '#fff',
+              color: inProject ? 'rgba(255,255,255,0.5)' : '#fff',
               border: inProject ? '1px solid rgba(255,255,255,0.08)' : 'none',
               cursor: inProject ? 'default' : 'pointer',
               fontFamily: 'Raleway',
@@ -680,7 +680,7 @@ export default function AvatarLibrary({ projectId, onCharactersChanged }: Avatar
       }}>
         <div style={{
           fontSize: '13px',
-          color: 'rgba(255,255,255,0.3)',
+          color: 'rgba(255,255,255,0.5)',
           fontFamily: 'Raleway',
         }}>Loading character roster...</div>
       </div>
@@ -713,7 +713,7 @@ export default function AvatarLibrary({ projectId, onCharactersChanged }: Avatar
                 fontSize: '12px',
                 fontWeight: 700,
                 background: viewMode === 'library' ? 'rgba(255,45,123,0.12)' : 'transparent',
-                color: viewMode === 'library' ? '#ff2d7b' : 'rgba(255,255,255,0.3)',
+                color: viewMode === 'library' ? '#ff2d7b' : 'rgba(255,255,255,0.5)',
                 border: 'none',
                 cursor: 'pointer',
                 fontFamily: 'Raleway',
@@ -729,7 +729,7 @@ export default function AvatarLibrary({ projectId, onCharactersChanged }: Avatar
                 fontSize: '12px',
                 fontWeight: 700,
                 background: viewMode === 'project_roster' ? 'rgba(255,45,123,0.12)' : 'transparent',
-                color: viewMode === 'project_roster' ? '#ff2d7b' : 'rgba(255,255,255,0.3)',
+                color: viewMode === 'project_roster' ? '#ff2d7b' : 'rgba(255,255,255,0.5)',
                 border: 'none',
                 borderLeft: '1px solid rgba(255,255,255,0.08)',
                 cursor: 'pointer',
@@ -779,7 +779,7 @@ export default function AvatarLibrary({ projectId, onCharactersChanged }: Avatar
               fontSize: '11px',
               background: '#1a1a1a',
               border: '1px solid rgba(255,255,255,0.08)',
-              color: 'rgba(255,255,255,0.6)',
+              color: 'rgba(255,255,255,0.75)',
               outline: 'none',
               cursor: 'pointer',
               fontFamily: 'Raleway',
@@ -799,7 +799,7 @@ export default function AvatarLibrary({ projectId, onCharactersChanged }: Avatar
               fontSize: '11px',
               background: '#1a1a1a',
               border: '1px solid rgba(255,255,255,0.08)',
-              color: 'rgba(255,255,255,0.6)',
+              color: 'rgba(255,255,255,0.75)',
               outline: 'none',
               cursor: 'pointer',
               fontFamily: 'Raleway',
@@ -855,7 +855,7 @@ export default function AvatarLibrary({ projectId, onCharactersChanged }: Avatar
                   </svg>
                   <p style={{
                     fontSize: '13px',
-                    color: 'rgba(255,255,255,0.3)',
+                    color: 'rgba(255,255,255,0.5)',
                     fontFamily: 'Raleway',
                   }}>
                     {avatars.length === 0 ? 'No characters yet. Create your first character.' : 'No characters match filters.'}
@@ -973,7 +973,7 @@ export default function AvatarLibrary({ projectId, onCharactersChanged }: Avatar
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
-                          color: 'rgba(255,255,255,0.3)',
+                          color: 'rgba(255,255,255,0.5)',
                           fontFamily: 'Raleway',
                         }}>
                           {AGE_LABELS[avatar.age_appearance] || 'Adult'} / {GENDER_LABELS[avatar.gender_presentation] || 'Other'}
@@ -1002,7 +1002,7 @@ export default function AvatarLibrary({ projectId, onCharactersChanged }: Avatar
                   </svg>
                   <p style={{
                     fontSize: '13px',
-                    color: 'rgba(255,255,255,0.3)',
+                    color: 'rgba(255,255,255,0.5)',
                     fontFamily: 'Raleway',
                   }}>
                     No characters in your party yet. Browse the library to recruit.
@@ -1045,7 +1045,7 @@ export default function AvatarLibrary({ projectId, onCharactersChanged }: Avatar
                         }}>{avatar.name}</div>
                         <div style={{
                           fontSize: '11px',
-                          color: 'rgba(255,255,255,0.3)',
+                          color: 'rgba(255,255,255,0.5)',
                           fontFamily: 'Raleway',
                         }}>
                           {pc.role_name || 'No role assigned'}
@@ -1059,7 +1059,7 @@ export default function AvatarLibrary({ projectId, onCharactersChanged }: Avatar
                           fontWeight: 700,
                           background: 'rgba(255,255,255,0.04)',
                           border: '1px solid rgba(255,255,255,0.08)',
-                          color: 'rgba(255,255,255,0.6)',
+                          color: 'rgba(255,255,255,0.75)',
                           cursor: 'pointer',
                           fontFamily: 'Raleway',
                           transition: 'all 0.2s',
@@ -1121,7 +1121,7 @@ export default function AvatarLibrary({ projectId, onCharactersChanged }: Avatar
             <p style={{
               fontSize: '12px',
               textAlign: 'center',
-              color: 'rgba(255,255,255,0.3)',
+              color: 'rgba(255,255,255,0.5)',
               fontFamily: 'Raleway',
             }}>
               Select a character to view their stats and reference sheet

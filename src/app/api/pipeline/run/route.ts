@@ -55,7 +55,7 @@ async function callClaude(apiKey: string, system: string, userMessage: string): 
   }
 }
 
-// ── Agent: Script Analysis ──
+// ── Agent: Script Analysis (AI Director) ──
 async function runScriptAnalysis(
   supabase: Awaited<ReturnType<typeof createClient>>,
   apiKey: string,
@@ -65,33 +65,97 @@ async function runScriptAnalysis(
   const script = project.script as string;
   const description = (project.description as string) || '';
   const direction = (project.creative_direction as string) || '';
+  const targetDuration = Number(project.target_duration_seconds) || 180; // Default 3 minutes
+  const isAnimation = (project.project_mode as string) === 'animation';
 
-  const system = `You are a professional storyboard artist and film production planner. Break down scripts into individual shots for a storyboard. Return ONLY valid JSON, no markdown fences.`;
+  const animationDirective = isAnimation
+    ? `
 
-  const prompt = `Break this script into individual storyboard shots. For each shot provide:
-- title: short descriptive name (e.g. "Wren discovers AI tool")
-- description: detailed action/animation description for the shot
-- dialogue: any spoken dialogue in this shot (empty string if none)
-- narration: any voiceover narration in this shot (empty string if none)
+ANIMATION MODE ACTIVE:
+You are creating a storyboard for ANIMATION (motion graphics, 2D/3D). Adjust your thinking:
+- No live talent; describe characters as animated figures with clear visual traits
+- Use shot categories like "mogfx" and "fsg" more liberally for graphic-driven scenes
+- Camera movements describe virtual camera movement in the animation software
+- Focal length still applies (controls depth of field in 3D renders, framing in 2D)
+- Voice generation will be critical for timing; ensure dialogue/narration fields are precise
+- Include graphic placeholder shots for transitions, title cards, and data visualizations
+- Action descriptions should focus on what the animator needs to build, not live blocking`
+    : '';
+
+  const system = `You are an experienced ${isAnimation ? 'animation director and motion design lead' : 'film director and director of photography (DP)'} creating a professional storyboard breakdown. You think in terms of visual storytelling, pacing, emotional beats, and practical production planning.
+
+TIMING RULES (critical):
+- Calculate duration from dialogue word count: roughly 1 second per 2.5 words of dialogue/narration
+- Add time for action: physical movement adds 2-4 seconds, reactions add 1-2 seconds
+- Establishing/wide shots with no dialogue: 3-5 seconds
+- Title cards and text graphics: 4-6 seconds
+- Close-ups during emotional beats: hold 1-2 seconds longer than the dialogue
+- NEVER default everything to the same duration. Each shot must have a unique, justified timing.
+- The total duration of all shots should approximate ${targetDuration} seconds (${Math.floor(targetDuration / 60)}:${String(targetDuration % 60).padStart(2, '0')}).
+
+SHOT TYPE CHOICES (think like a DP):
+- Use wide/establishing shots to orient the viewer in a new location
+- Use medium shots for two-person dialogue
+- Use close-ups for emotional emphasis, reveals, and key story beats
+- Use extreme close-ups sparingly for maximum impact
+- Use over-shoulder for conversation coverage
+- Use POV to put the viewer in a character's perspective
+- Vary shot types to create visual rhythm; never use the same type 3+ times in a row
+
+FOCAL LENGTH (think like a cinematographer):
+- 24mm: wide establishing shots, environments, creating a sense of space
+- 35mm: medium wides, walk-and-talks, documentary feel
+- 50mm: standard coverage, natural perspective, interviews
+- 85mm: close-ups, portraits, isolating subjects from background
+- 100mm+: extreme close-ups, compression, voyeuristic distance
+
+CAMERA MOVEMENT (serve the story):
+- Static: tension, stillness, formal compositions
+- Dolly in: drawing attention, increasing intimacy or threat
+- Dolly out: reveal, pulling away, creating distance
+- Pan/tilt: following action, revealing environment
+- Tracking: following a character in motion, energy
+- Handheld: urgency, documentary realism, chaos
+- Crane: establishing grandeur, transitions
+- Do NOT assign movement unless it serves the narrative moment
+
+SHOT CATEGORIES:
+- "live_action": standard filmed shot
+- "fsg": Full Screen Graphic (text/data overlay, no camera)
+- "mogfx": Motion Graphics (animated graphics)
+- "title": Title card
+- "ost": On Screen Text overlay
+- "end_credits": End credits
+${animationDirective}
+
+Return ONLY valid JSON, no markdown fences.`;
+
+  const prompt = `Break this script into a professional storyboard. For each shot provide:
+- title: short descriptive name (e.g. "Doug receives diagnosis")
+- description: detailed visual description including framing, subject placement, lighting mood, and key action
+- dialogue: exact spoken dialogue in this shot (empty string if none)
+- narration: exact voiceover/narration text in this shot (empty string if none)
 - shot_type: one of: wide, medium, medium_close_up, close_up, extreme_close_up, over_shoulder, pov, aerial
 - camera_movement: one of: static, pan_left, pan_right, tilt_up, tilt_down, dolly_in, dolly_out, crane_up, crane_down, tracking, handheld, orbit, whip_pan, rack_focus
-- duration_seconds: estimated duration in seconds
+- focal_length: one of: 24mm, 35mm, 50mm, 85mm, 100mm, 135mm
+- duration_seconds: calculated duration based on dialogue word count and action (see timing rules)
+- shot_category: one of: live_action, fsg, mogfx, title, ost, end_credits
 
-${description ? `Synopsis/Context: ${description}` : ''}
+${description ? `Synopsis: ${description}` : ''}
 ${direction ? `Creative Direction: ${direction}` : ''}
+Target total duration: ${targetDuration} seconds
 
 Script:
 ${script}
 
-Return a JSON array of shot objects. Example:
-[{"title":"Opening","description":"Wide shot of office...","dialogue":"","narration":"Meet Wren.","shot_type":"wide","camera_movement":"static","duration_seconds":8}]`;
+Return a JSON array. Example:
+[{"title":"Office establishing","description":"Wide shot of a modern medical office. Morning light streams through venetian blinds casting striped shadows. A diploma hangs on the wall.","dialogue":"","narration":"","shot_type":"wide","camera_movement":"dolly_in","focal_length":"24mm","duration_seconds":4,"shot_category":"live_action"},{"title":"Doug's reaction","description":"Medium close-up of Doug sitting in the patient chair, looking slightly bewildered. Shallow depth of field isolates him from the clinical background.","dialogue":"So what does that mean exactly?","narration":"","shot_type":"medium_close_up","camera_movement":"static","focal_length":"85mm","duration_seconds":3,"shot_category":"live_action"}]`;
 
   const result = await callClaude(apiKey, system, prompt);
 
   // Parse the JSON response
   let shots;
   try {
-    // Try to find JSON array in the response
     const jsonMatch = result.match(/\[[\s\S]*\]/);
     if (!jsonMatch) throw new Error('No JSON array found in response');
     shots = JSON.parse(jsonMatch[0]);
@@ -103,7 +167,7 @@ Return a JSON array of shot objects. Example:
     throw new Error('Script analysis returned no shots');
   }
 
-  // Insert shots into the database (same pattern as existing generate endpoint)
+  // Insert shots into the database
   const shotInserts = shots.map((s: Record<string, unknown>, i: number) => ({
     project_id: project.id,
     user_id: userId,
@@ -114,8 +178,10 @@ Return a JSON array of shot objects. Example:
     narration: s.narration || null,
     shot_type: s.shot_type || 'wide',
     camera_movement: s.camera_movement || 'static',
-    duration_seconds: Number(s.duration_seconds) || 8,
-    generation_status: 'idle',
+    focal_length: s.focal_length || null,
+    shot_category: s.shot_category || 'live_action',
+    duration_seconds: Number(s.duration_seconds) || null,
+    generation_status: 'pending',
   }));
 
   const { data: insertedShots, error } = await supabase
