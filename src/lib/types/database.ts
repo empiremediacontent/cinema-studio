@@ -321,6 +321,42 @@ export interface PipelineTask {
   created_at: string;
 }
 
+// --- Feedback System ---
+
+export type FeedbackCategory = 'bug' | 'suggestion' | 'confusion' | 'performance' | 'other';
+export type FeedbackSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type FeedbackStatus = 'open' | 'seen' | 'in_progress' | 'resolved' | 'wont_fix';
+
+export interface FeedbackReport {
+  id: string;
+  user_id: string;
+  project_id: string | null;
+  category: FeedbackCategory;
+  severity: FeedbackSeverity;
+  page_section: string;
+  title: string;
+  description: string;
+  screenshot_url: string | null;
+  status: FeedbackStatus;
+  user_agent: string | null;
+  viewport_size: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  profile?: Profile | null;
+  reply_count?: number;
+}
+
+export interface FeedbackReply {
+  id: string;
+  report_id: string;
+  user_id: string;
+  message: string;
+  created_at: string;
+  // Joined
+  profile?: Profile | null;
+}
+
 export interface ProjectCinematographyDefaults {
   id: string;
   project_id: string;

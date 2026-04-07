@@ -125,6 +125,22 @@ export default function HamburgerMenu({ displayName, email, dark = false }: { di
             {email}
           </span>
           <div style={{ width: '100%', height: '1px', background: dropBorder, marginBottom: '16px' }} />
+          <a
+            href="/feedback/my-reports"
+            className="heading-label transition-smooth"
+            style={{
+              display: 'block',
+              color: textMuted,
+              textDecoration: 'none',
+              fontSize: '10px',
+              letterSpacing: '0.12em',
+              marginBottom: '12px',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#ff2d7b')}
+            onMouseLeave={e => (e.currentTarget.style.color = textMuted)}
+          >
+            My Feedback
+          </a>
           <button
             onClick={handleSignOut}
             className="heading-label transition-smooth"
