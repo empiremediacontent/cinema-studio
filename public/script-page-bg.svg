@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 2200" width="1700" height="2200" preserveAspectRatio="xMidYMid slice">
+  <!-- White page background -->
+  <rect width="1700" height="2200" fill="#ffffff"/>
+
+  <!-- Subtle paper texture (very faint horizontal rules) -->
+  <g opacity="0.04" stroke="#000" stroke-width="0.5">
+    <line x1="0" y1="220" x2="1700" y2="220"/>
+    <line x1="0" y1="420" x2="1700" y2="420"/>
+    <line x1="0" y1="620" x2="1700" y2="620"/>
+  </g>
+
+  <!-- AI-flagged dialogue block: subtle pink wash + left-margin marker bar.
+       Flags the CHEN / STRANGER exchange (y=850-1130) as the AI's redundancy
+       suggestion target. Designed to be quietly visible on the page so the
+       overlaid suggestion card has a clear anchor. -->
+  <rect x="180" y="850" width="1340" height="280" fill="#ff2d7b" opacity="0.07" rx="2"/>
+  <rect x="160" y="850" width="6" height="280" fill="#ff2d7b" opacity="0.85" rx="3"/>
+
+  <!-- Page header: production code, scene number, page number -->
+  <g font-family="Courier New, Courier, monospace" font-size="20" fill="#9aa0a6">
+    <text x="200" y="120">CINEMA STUDIO  /  SCENE 14  /  REV. PINK</text>
+    <text x="1500" y="120" text-anchor="end">14.</text>
+  </g>
+
+  <!-- Screenplay body
+       Margins (industry standard, scaled for viewBox 1700w):
+         Scene heading / Action: x=200
+         Character name:         x=620  (uppercase, centered-ish)
+         Parenthetical:          x=540
+         Dialogue:               x=420  (max width ~860)
+         Transition:             right-aligned at x=1500
+       Line height: 44px. Font: Courier 24px (industry: Courier 12pt). -->
+  <g font-family="Courier New, Courier, monospace" font-size="24" fill="#1a1a1a">
+
+    <!-- FADE IN: -->
+    <text x="200" y="220" font-weight="700">FADE IN:</text>
+
+    <!-- Scene heading -->
+    <text x="200" y="308" font-weight="700">INT. NEON-LIT ALLEY - NIGHT</text>
+
+    <!-- Action -->
+    <text x="200" y="396">Rain slicks the pavement. Steam rises from a manhole cover.</text>
+    <text x="200" y="440">CHEN (40s, sharp-eyed, weathered jacket) steps into a pool of</text>
+    <text x="200" y="484">pink neon glow, scanning rooftops.</text>
+
+    <!-- Character name -->
+    <text x="620" y="572" font-weight="700">CHEN (V.O.)</text>
+
+    <!-- Dialogue -->
+    <text x="420" y="616">Some stories you finish. Others</text>
+    <text x="420" y="660">finish you.</text>
+
+    <!-- Action -->
+    <text x="200" y="748">A figure moves at the far end of the alley. Chen's hand drops</text>
+    <text x="200" y="792">to her side.</text>
+
+    <!-- Character name -->
+    <text x="620" y="880" font-weight="700">CHEN</text>
+
+    <!-- Parenthetical -->
+    <text x="540" y="924">(low, steady)</text>
+
+    <!-- Dialogue -->
+    <text x="420" y="968">You're late.</text>
+
+    <!-- Character name -->
+    <text x="620" y="1056" font-weight="700">STRANGER (O.S.)</text>
+
+    <!-- Dialogue -->
+    <text x="420" y="1100">You're alive. Even trade.</text>
+
+    <!-- Action -->
+    <text x="200" y="1188">Chen smiles. The neon flickers, throwing her shadow long across</text>
+    <text x="200" y="1232">the brick. She does not turn around.</text>
+
+    <!-- Character name -->
+    <text x="620" y="1320" font-weight="700">CHEN</text>
+
+    <!-- Dialogue -->
+    <text x="420" y="1364">Then we still have a job to do.</text>
+
+    <!-- Action beat -->
+    <text x="200" y="1452">She steps deeper into the alley. The camera holds, lingering on</text>
+    <text x="200" y="1496">the wet street long after she's gone.</text>
+
+    <!-- Transition -->
+    <text x="1500" y="1584" text-anchor="end" font-weight="700">CUT TO:</text>
+
+    <!-- Scene heading -->
+    <text x="200" y="1672" font-weight="700">INT. PRODUCTION ROOM - CONTINUOUS</text>
+
+    <!-- Action -->
+    <text x="200" y="1760">A monitor hums in a dim editing bay. The scene we just read</text>
+    <text x="200" y="1804">scrolls down an editor pane, character by character, as if</text>
+    <text x="200" y="1848">someone, or something, is writing it in real time.</text>
+
+    <!-- Final transition -->
+    <text x="1500" y="1980" text-anchor="end" font-weight="700">FADE OUT.</text>
+
+  </g>
+</svg>

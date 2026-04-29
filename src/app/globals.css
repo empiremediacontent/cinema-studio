@@ -589,3 +589,15 @@ audio { border-radius: 0; }
     display: none;
   }
 }
+
+/* Production Must-Haves section: explicit responsive switch between
+   the desktop background image (with vignettes) and the inline mobile
+   image. Every rule is !important so it beats inline `style` attributes
+   on the elements (the inline <img> has display:block inline). */
+.controls-desktop-layer { display: block !important; }
+.controls-mobile-img { display: none !important; }
+
+@media (max-width: 1023px) {
+  .controls-desktop-layer { display: none !important; }
+  .controls-mobile-img { display: block !important; }
+}
