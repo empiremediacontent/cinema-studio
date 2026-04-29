@@ -589,7 +589,7 @@ export default function Home() {
           className="hidden lg:block controls-desktop-layer"
           style={{
             position: 'absolute', inset: 0, zIndex: 0,
-            backgroundImage: 'url(https://firebasestorage.googleapis.com/v0/b/blue-peak-poc.firebasestorage.app/o/Jason%20Vazquez%2FBackgrounds%2FControls%204.png?alt=media&token=30478997-280b-451a-b6ae-a491790d30f5)',
+            backgroundImage: 'url(https://firebasestorage.googleapis.com/v0/b/blue-peak-poc.firebasestorage.app/o/Jason%20Vazquez%2FBackgrounds%2FControls%205.png?alt=media&token=768d992b-83b3-45fb-821d-a2f3299ef7ff)',
             backgroundSize: '72% auto',
             backgroundPosition: '95% 78%',
             backgroundRepeat: 'no-repeat',
@@ -645,7 +645,7 @@ export default function Home() {
             {/* Mobile and tablet: render the controls image inline beneath the
                 text. Hidden at lg+ where the bg image takes over. */}
             <img
-              src="https://firebasestorage.googleapis.com/v0/b/blue-peak-poc.firebasestorage.app/o/Jason%20Vazquez%2FBackgrounds%2FControls%204.png?alt=media&token=30478997-280b-451a-b6ae-a491790d30f5"
+              src="https://firebasestorage.googleapis.com/v0/b/blue-peak-poc.firebasestorage.app/o/Jason%20Vazquez%2FBackgrounds%2FControls%205.png?alt=media&token=768d992b-83b3-45fb-821d-a2f3299ef7ff"
               alt="Cinema Studio camera, lens, and lighting controls panel"
               draggable={false}
               className="block lg:hidden controls-mobile-img"
