@@ -591,7 +591,7 @@ export default function Home() {
             position: 'absolute', inset: 0, zIndex: 0,
             backgroundImage: 'url(https://firebasestorage.googleapis.com/v0/b/blue-peak-poc.firebasestorage.app/o/Jason%20Vazquez%2FBackgrounds%2FControls%205.png?alt=media&token=768d992b-83b3-45fb-821d-a2f3299ef7ff)',
             backgroundSize: '72% auto',
-            backgroundPosition: '95% 78%',
+            backgroundPosition: '85% 78%',
             backgroundRepeat: 'no-repeat',
             pointerEvents: 'none',
             WebkitMaskImage: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 86%, rgba(0,0,0,0) 100%), linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 100%)',
