@@ -169,14 +169,17 @@ export default function Home() {
           </span>
 
           <h1 className="heading-display" style={{
-            fontSize: 'clamp(48px, 10vw, 160px)', color: '#fff',
-            marginBottom: '12px', lineHeight: '0.95',
+            /* Bumped floor 48 -> 80 so phones/tablets get larger
+               type. Preferred 13vw scales up faster across breakpoints. */
+            fontSize: 'clamp(80px, 13vw, 180px)', color: '#fff',
+            /* Tightened gap between Cinema and Studio (was 12px). */
+            marginBottom: '0', lineHeight: '0.9',
           }}>
             Cinema
           </h1>
           <h1 className="heading-display" style={{
-            fontSize: 'clamp(48px, 10vw, 160px)',
-            color: '#ff2d7b', marginBottom: '32px', lineHeight: '0.95',
+            fontSize: 'clamp(80px, 13vw, 180px)',
+            color: '#ff2d7b', marginBottom: '32px', lineHeight: '0.9',
           }}>
             Studio
           </h1>
@@ -226,6 +229,10 @@ export default function Home() {
             gap: 'clamp(40px, 5vw, 80px)',
             alignItems: 'flex-start',
             flexWrap: 'wrap',
+            /* Center wrapped rows so the script column doesn't pile
+               into the left edge on tablet, where its absolutely
+               positioned bot would extend past the viewport. */
+            justifyContent: 'center',
           }}>
 
             {/* Left: main copy */}
@@ -255,7 +262,7 @@ export default function Home() {
                 Hidden below md (768px) — the SVG body text would render at ~5px
                 on a 360px viewport which is unreadable, and stacking it would
                 add visual weight without communicating anything. */}
-            <div className="hidden md:block" style={{ flex: '1 1 460px', maxWidth: '620px' }}>
+            <div className="hidden md:block script-card-col" style={{ flex: '1 1 460px', maxWidth: '620px' }}>
               <div
                 aria-label="Sample output from the Cinema Studio Script Writing Assistant"
                 role="img"
@@ -413,6 +420,7 @@ export default function Home() {
                     page so it overlaps the corner. Uses negative offsets to
                     break out of the card without affecting layout flow. */}
                 <img
+                  className="about-bot"
                   src="https://firebasestorage.googleapis.com/v0/b/blue-peak-poc.firebasestorage.app/o/Jason%20Vazquez%2FBackgrounds%2FBot.png?alt=media&token=13d7d33a-1fcd-41ef-935e-dd1a299444fc"
                   alt="Cinema Studio AI Assistant"
                   draggable={false}
@@ -420,8 +428,10 @@ export default function Home() {
                     position: 'absolute',
                     width: 'clamp(280px, 36vw, 420px)',
                     height: 'auto',
-                    left: '-32%',
-                    bottom: '-18%',
+                    /* left and bottom offsets are set responsively via
+                       .about-bot in globals.css. Tablet: bot pulled up
+                       and further left so it stays inside the now-smaller
+                       script column. Desktop: original aggressive offsets. */
                     pointerEvents: 'none',
                     userSelect: 'none',
                     zIndex: 3,
@@ -577,88 +587,48 @@ export default function Home() {
       <section
         ref={setRef('showcase')}
         id="showcase"
-        className="showcase-section lg:min-h-[1080px]"
-        style={{ background: '#000', padding: 'clamp(40px, 6vw, 130px) clamp(20px, 5vw, 50px) clamp(80px, 12vw, 280px)', position: 'relative', overflow: 'hidden' }}
+        className="controls-section"
+        style={{
+          background: '#000',
+          /* Vertical padding always; horizontal padding handled by
+             .controls-section in globals.css so mobile/tablet are
+             full-bleed (image fills viewport) while desktop keeps
+             breathing room. */
+          padding: 'clamp(32px, 5vw, 80px) 0',
+          position: 'relative',
+        }}
       >
-
-        {/* Desktop-only background image and vignettes. Below lg (<1024px) the
-            controls image renders inline beneath the text instead, so it never
-            stacks on top of the copy at narrow widths. */}
-        <div
-          aria-hidden="true"
-          className="hidden lg:block controls-desktop-layer"
-          style={{
-            position: 'absolute', inset: 0, zIndex: 0,
-            backgroundImage: 'url(https://firebasestorage.googleapis.com/v0/b/blue-peak-poc.firebasestorage.app/o/Jason%20Vazquez%2FBackgrounds%2FControls%205.png?alt=media&token=768d992b-83b3-45fb-821d-a2f3299ef7ff)',
-            backgroundSize: '72% auto',
-            backgroundPosition: '85% 78%',
-            backgroundRepeat: 'no-repeat',
-            pointerEvents: 'none',
-            WebkitMaskImage: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 86%, rgba(0,0,0,0) 100%), linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 100%)',
-            maskImage: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 86%, rgba(0,0,0,0) 100%), linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 100%)',
-            WebkitMaskComposite: 'source-in',
-            maskComposite: 'intersect',
-          }}
-        />
-
-        <div
-          aria-hidden="true"
-          className="hidden lg:block controls-desktop-layer"
-          style={{
-            position: 'absolute', inset: 0, zIndex: 1,
-            background: 'radial-gradient(ellipse 55% 38% at 15% 25%, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.78) 22%, rgba(0,0,0,0.5) 45%, rgba(0,0,0,0.2) 70%, rgba(0,0,0,0) 100%)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        <div
-          aria-hidden="true"
-          className="hidden lg:block controls-desktop-layer"
-          style={{
-            position: 'absolute', inset: 0, zIndex: 1,
-            background: 'radial-gradient(ellipse 60% 60% at 0% 0%, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 25%, rgba(0,0,0,0.3) 55%, rgba(0,0,0,0) 100%)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        <div style={{ maxWidth: '1500px', margin: '0', marginLeft: 'clamp(20px, 12vw, 240px)', position: 'relative', zIndex: 2 }}>
-
-          {/* Text column. Caps at 580px on desktop; on mobile (<lg) it spans
-              the available width naturally so paragraphs don't get squeezed. */}
-          <div style={{ width: '100%', maxWidth: '580px', textAlign: 'left' }}>
-            <h2 className="heading-display" style={{ fontSize: 'clamp(32px, 5vw, 72px)', color: '#fff', marginBottom: '24px', lineHeight: '1.05' }}>
-              Production <span style={{ color: '#ff2d7b' }}>Must-Haves</span>
-            </h2>
-            <span className="heading-label" style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', letterSpacing: '0.15em', display: 'inline-block' }}>
-              Cameras, Lenses, Lighting. All Built In.
-            </span>
-
-            <div style={{ marginTop: 'clamp(28px, 3vw, 40px)' }}>
-              <p className="intro-text" style={{ color: 'rgba(255,255,255,0.88)', marginBottom: '20px', fontSize: 'clamp(16px, 1.5vw, 20px)', lineHeight: '1.55' }}>
-                Shoot on the cameras you have always dreamed of using. The Arri Alexa LF for cinematic latitude. The RED V-Raptor XL for 8K detail. The Sony VENICE 2 for skin tones that flatter every face. Then pair them with prime, anamorphic, and zoom lenses across every focal length, from intimate 14mm wides to long 200mm portraits.
-              </p>
-              <p className="intro-text" style={{ color: 'rgba(255,255,255,0.88)', fontSize: 'clamp(16px, 1.5vw, 20px)', lineHeight: '1.55' }}>
-                Layer in cinematic lighting and the visual style of your production, then let the AI assistant translate every choice into a precise, scene-by-scene prompt. Every frame in your project speaks the same visual language, with the look and feel of a Hollywood feature.
-              </p>
-            </div>
-
-            {/* Mobile and tablet: render the controls image inline beneath the
-                text. Hidden at lg+ where the bg image takes over. */}
-            <img
-              src="https://firebasestorage.googleapis.com/v0/b/blue-peak-poc.firebasestorage.app/o/Jason%20Vazquez%2FBackgrounds%2FControls%205.png?alt=media&token=768d992b-83b3-45fb-821d-a2f3299ef7ff"
-              alt="Cinema Studio camera, lens, and lighting controls panel"
-              draggable={false}
-              className="block lg:hidden controls-mobile-img"
-              style={{
-                width: '100%',
-                height: 'auto',
-                marginTop: 'clamp(40px, 6vw, 70px)',
-                display: 'block',
-                userSelect: 'none',
-              }}
+        {/* Composed image: separate assets for desktop (Controls 7) vs.
+            mobile/tablet (Mobile 2). The browser picks based on the
+            <source> media query before requesting the image, so each
+            device only downloads the asset it needs. */}
+        <div style={{ maxWidth: '1600px', margin: '0 auto 0 0' }}>
+          <picture>
+            <source
+              media="(max-width: 1023px)"
+              srcSet="https://firebasestorage.googleapis.com/v0/b/blue-peak-poc.firebasestorage.app/o/Jason%20Vazquez%2FBackgrounds%2FMobile%202.png?alt=media&token=01e4d764-d175-49e1-affd-8feda668f2e8"
             />
-          </div>
-
+          <img
+            src="https://firebasestorage.googleapis.com/v0/b/blue-peak-poc.firebasestorage.app/o/Jason%20Vazquez%2FBackgrounds%2FControls%207.png?alt=media&token=01aaaef1-624b-49b8-8140-406ae79e303d"
+            alt="Cinema Studio production must-haves: cameras, lenses, lighting, and AI prompt consistency"
+            draggable={false}
+            loading="lazy"
+            decoding="async"
+            style={{
+              display: 'block',
+              width: '100%',
+              height: 'auto',
+              maxWidth: '100%',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+              /* Hint browsers (Safari especially) to use a high-quality
+                 scaler on retina/high-DPI screens. */
+              imageRendering: 'auto',
+              /* Avoid sub-pixel gap below inline images (Safari/iOS). */
+              verticalAlign: 'middle',
+            }}
+          />
+          </picture>
         </div>
       </section>
 
@@ -675,14 +645,33 @@ export default function Home() {
             <span className="divider-line-light" />
           </span>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'clamp(24px, 3vw, 48px)', marginTop: '80px', textAlign: 'center' }}>
+          <div
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+            style={{ gap: 'clamp(20px, 2.5vw, 40px)', marginTop: '80px', textAlign: 'center' }}
+          >
             {[
               { step: '01', title: 'Write', label: 'Script', desc: 'Paste or write your script. Add creative direction to guide the visual tone of every frame.' },
               { step: '02', title: 'Generate', label: 'Shots', desc: 'AI analyzes your script and produces a shot list with scene breakdowns, camera notes, and timing.' },
               { step: '03', title: 'Direct', label: 'Loadout', desc: 'Equip each shot with cinematic options: lens, lighting, color grade, camera movement, and mood.' },
               { step: '04', title: 'Render', label: 'Output', desc: 'Generate frames, interpolate video, add dialogue and audio. Export your finished production.' },
             ].map((item, i) => (
-              <div key={i}>
+              <div
+                key={i}
+                style={{
+                  padding: 'clamp(24px, 2.5vw, 36px) clamp(20px, 2vw, 28px)',
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  transition: 'background 0.3s ease, border-color 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                  e.currentTarget.style.borderColor = 'rgba(255,45,123,0.35)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+                }}
+              >
                 <span className="heading-display" style={{ fontSize: 'clamp(64px, 8vw, 96px)', color: 'rgba(255,255,255,0.25)', display: 'block', lineHeight: 1 }}>
                   {item.step}
                 </span>
@@ -692,7 +681,18 @@ export default function Home() {
                 <span className="heading-label" style={{ color: '#ff2d7b', fontSize: '9px', display: 'block', marginBottom: '14px' }}>
                   {item.label}
                 </span>
-                <p className="body-text" style={{ color: 'rgba(255,255,255,0.75)', fontSize: '14px', lineHeight: '1.8' }}>
+                <p
+                  className="body-text"
+                  style={{
+                    color: 'rgba(255,255,255,0.75)',
+                    fontSize: '14px',
+                    lineHeight: '1.8',
+                    /* Distribute words evenly across lines so the last line
+                       never ends with a single orphaned word. Works in
+                       Chrome, Safari 17.4+, Firefox 121+. */
+                    textWrap: 'balance',
+                  }}
+                >
                   {item.desc}
                 </p>
               </div>

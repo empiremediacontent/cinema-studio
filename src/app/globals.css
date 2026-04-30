@@ -590,14 +590,65 @@ audio { border-radius: 0; }
   }
 }
 
-/* Production Must-Haves section: explicit responsive switch between
-   the desktop background image (with vignettes) and the inline mobile
-   image. Every rule is !important so it beats inline `style` attributes
-   on the elements (the inline <img> has display:block inline). */
-.controls-desktop-layer { display: block !important; }
-.controls-mobile-img { display: none !important; }
+/* Production Must-Haves section. Mobile and tablet go full-bleed (no
+   horizontal padding) so the composed image fills the full viewport
+   width. Desktop restores horizontal padding for breathing room. */
+@media (min-width: 1024px) {
+  .controls-section {
+    padding-left: clamp(16px, 4vw, 50px) !important;
+    padding-right: clamp(16px, 4vw, 50px) !important;
+  }
+}
 
+/* On mobile and tablet (<1024px), the section's inner container is
+   forced to span the full viewport so the purpose-built Mobile 2
+   image (served via <picture><source>) renders edge-to-edge without
+   the desktop's flush-left max-width offset. */
 @media (max-width: 1023px) {
-  .controls-desktop-layer { display: none !important; }
-  .controls-mobile-img { display: block !important; }
+  .controls-section { overflow: hidden !important; }
+  .controls-section > div { max-width: 100% !important; margin: 0 !important; }
+  .controls-section img {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+  }
+}
+
+/* Mobile only (<768px): scale the image up by 22% so its baked-in
+   text is more legible on phones. Negative margin keeps the image
+   visually centered while it overflows the viewport edges; section's
+   overflow:hidden prevents any horizontal scroll. Tablets keep the
+   100% rendering above. */
+@media (max-width: 767px) {
+  .controls-section img {
+    width: 130% !important;
+    max-width: 130% !important;
+    margin-left: -15% !important;
+  }
+}
+
+/* About section, tablet view: shrink the script card column so the
+   screenplay page is more compact when it wraps to its own row. The
+   bot then pulls UP and further LEFT so it stays anchored to the
+   smaller card without extending past the viewport. */
+@media (max-width: 1023px) {
+  .script-card-col {
+    max-width: 420px !important;
+    flex-basis: 360px !important;
+  }
+}
+
+/* About section bot illustration responsive offsets. Tablet pulls
+   the bot up (less negative bottom) and further left (more negative
+   left) to keep it fully visible against the centered, smaller card.
+   Desktop restores the dramatic -32% / -18% positioning. */
+.about-bot {
+  left: -30% !important;
+  bottom: -12% !important;
+}
+@media (min-width: 1024px) {
+  .about-bot {
+    left: -32% !important;
+    bottom: -18% !important;
+  }
 }
